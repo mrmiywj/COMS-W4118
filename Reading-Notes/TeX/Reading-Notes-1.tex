@@ -1,0 +1,149 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Reading Notes for Lecture 1}
+\author{Alexander Roth}
+\date{2015 -- 01 -- 21}
+\maketitle
+
+\section*{Operating System Concepts Essentials}
+
+% Section 1.2 Computer-System Organization
+\subsection*{Computer-System Organization}
+
+% Subsection 1.2.1 Computer-System Operation
+\subsubsection*{Computer-System Operation}
+A modern general-purpose computer system consists of one or more CPUs and a
+number of device controllers connected through a common bus that provides access
+to shared memory.
+
+For a computer to start running, it needs to have an initial program to run
+(\textbf{bootstrap program}), which is typically stored in the computer
+hardware. It must be able to locate the operating-system kernel and load it into
+memory.
+
+When the kernel is loaded into memory, certain processes begin as well. These
+are known as \textbf{system processes} or \textbf{system daemons}.
+
+\textbf{Interrupts} signal an occurrence of an event from either the software or
+hardware. Software make \textbf{system calls} to trigger an interrupt.
+
+Interrupts must transfer control to the appropriate interrupt service routines
+and be handled quickly. Thus, a table of pointers to interrupt routines can be
+used to provide the necessary speed. Interrupt routines are called indirectly
+through the table. This table holds the addresses of the interrupt service
+routines for various devices. This array (\textbf{interrupt vector}) of
+addresses is then indexed by a unique device number, with the given interrupt
+request, to provide the address of the interrupt service routine for the
+interrupting device.
+
+The interrupt architecture must also save the address of the interrupted
+instruction.
+
+% Subsection 1.2.2 Storage Structure
+\subsubsection*{Storage Structure}
+The CPU can load instructions only from memory, so any programs to run must be
+stored there. Most general-purpose computers run most of their programs from
+rewritable memory, called main memory or \textbf{random-access memory (RAM)}.
+
+\textbf{Read-only memory (ROM)} cannot be changed, so only static programs such
+as the bootstrap program are stored there.
+
+All forms of memory provide an array of bytes. Each byte has its own address.
+Interaction is achieved through a sequence of \texttt{load} and \texttt{store}
+instructions to specific memory addresses.
+
+A typical instruction-execution cycle, as executed on a system with a
+\textbf{von Neumann architecutre}, first fetches an instruction from memory and
+stores that instruction in the \textbf{instruction register}. The instruction is
+then decoded and an operation is performed on it. The result may be stored back
+in memory. The memory unit sees only a stream of memory addresses. It does not
+know how they are generated or what they are.
+
+Ideally the programs and data should reside in main memory permanently. However,
+it is often not possible because:
+\begin{enumerate}
+\item Main memory is usually too small to store all needed programs and data
+permanently.
+\item Main memory is a \textbf{volatile} storage debice that loses its contents
+when power is turned off or otherwise lost.
+\end{enumerate}
+
+Thus most computer systems provide \textbf{secondary storage} that is able to
+hold large quantities of data permanently.
+
+The wide variety of storage systems can be organized in a hierarchy according to
+speed and cost. The higher levels are expensive, but they are fast. As we move
+down the hierarchy, the cost per bit generally decreases, whereas the access
+time generally increases.
+
+\textbf{Volatile storage} loses its contents when the power to the device is
+removed. Thus, data must be written to \textbf{nonvolatile storage} for
+safekeeping.
+
+The design of a complete memory system must use only as much expensive memory as
+necessary while providing as much inexpensive, nonvolatile memory as possible.
+Caches can be installed to improve performance where a large disparity in access
+time or transfer rate exists between two components.
+
+% Section 1.4 Operating-System Structure
+\subsection*{Operating-System Structure}
+An operating system provides the environment within which programs are executed.
+(Duh)
+
+\textbf{Multiprogramming} increases CPU utilization by organizing jobs (code and
+data) so that the CPU always has one to execute.
+
+The operating system keeps several jobs in memory simultaneously. The jobs are
+kept initially on disk in the \textbf{job pool}. This pool consists of all
+processes residing on disk awaiting allocation of main memory.
+
+The set of jobs in memory can be a subset of the jobs kept in the job pool. The
+operating system picks and begins to execute one of the jobs in memory.
+Eventually, the job may have to wait for some task to complete. In a
+multiprogrammed system, the operating system simply switches to, and executes,
+another job. As long as at least one job needs to execute, the CPU is never
+idle.
+
+\textbf{Time sharing} (or \textbf{multitasking}) is a logical extension of
+multiprogramming. In time-sharing systems, the CPU executes multiple jobs by
+switching among them, but the switches occur so frequently that the users can
+interact with each program while it is running.
+
+Time sharing requires an \textbf{interactive} computer system, which provides
+direct communication between the user and the system. The \textbf{response time}
+should be short -- typically less than one second.
+
+A time-shared operating system allows many users to share the computer
+simultaneously. Since each action or command in a time-shared system tends to be
+short, only a little CPU time is needed for each user.
+
+A program loaded into memory is called a \textbf{process}. When a process
+executes, it typically executes for only a short time before it either finishes
+or needs to perform I/O.
+
+In a time-sharing system, the operating system must ensure reasonable response
+time. The goal is sometimes accomplished through \textbf{swapping}, whereby
+processes are swapped in and out of main memory to the disk. A more common
+method for ensuring reasonable response time is \textbf{virtual memory}, a
+technique that allows the execution of a process that is not completely in
+memory. This enables the users to run programs that are larger than actual
+\textbf{physical memory}.
+
+% Section 1.5 Operating-System Operations
+\subsection*{Operating-System Operations}
+
+
+\end{document}
