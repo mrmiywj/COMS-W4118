@@ -18,6 +18,7 @@
 \date{2015 -- 01 -- 21}
 \maketitle
 
+% Operating System Concepts Essentials Second Edition
 \section*{Operating System Concepts Essentials}
 
 % Section 1.2 Computer-System Organization
@@ -144,6 +145,122 @@ memory. This enables the users to run programs that are larger than actual
 
 % Section 1.5 Operating-System Operations
 \subsection*{Operating-System Operations}
+Modern operating systems are \textbf{interrupt-driven}. Events are almost always
+signaled by the occurrence of an interrupt or a trap. A \textbf{trap} (or an
+\textbf{exception}) is a software-generated interrupt caused either by an error
+or by a specific request from a user program.
 
+% Subsection 1.5.1 Dual-Mode and Multimode Operation
+\subsection*{Dual-Mode and Multimode Operation}
+We need two separate \emph{modes} of operation: \textbf{user mode} and
+\textbf{kernel mode} (\textbf{supervisor mode, system mode,} or
+\textbf{privileged mode}). A bit, called the \textbf{mode bit}, is added to the
+hardware of the computer to indicate the current mode:
+\begin{description}
+\item[0] kernel
+\item[1] user
+\end{description}
+This bit allows us to distinguish between a task that is executed on behalf of
+the user or the operating system.
+
+Whenever the operating system gains control of the computer, it is in kernel
+mode. The system always switches to user mode before passing control to a user
+program.
+
+The dual mode of operation provides us with the means for protecting the
+operating system from errant users. We accomplish this by designating some of
+the machine instructions that may cause harm as \textbf{privileged
+instructions}. The hardware allows privileged instructions to be executed only
+in kernel mode.
+
+System calls provide the means for a user program to ask the operating system to
+perform tasks reserved for the operating system on the user program's behalf.
+
+When a system call is executed, it is typically treated by the hardware as a
+software interrupt. Control passes through the interrupt vector to a service
+routine in the operating system, and the mode bit is set to kernel mode.
+
+% Subsection 1.5.2 Timer
+\subsection*{Timer}
+We cannot allow a user program to get stuck in an infinte loop or to fail to
+call system services and never return control to the operating system.  Thus we
+use a \textbf{timer}. A timer can be set to interrupt the computer after a
+specified period. A \textbf{variable timer} is generally implemented by a fixed-
+rate clock and a counter.
+
+Before turning over control to the user, teh operating system ensures that the
+timer is set to interrupt. If the timer interrupts, control transfers
+automatically to the operating system, which may treat the interrupt as a fatal
+error or may give the program more time.
+
+% Subsubsection 1.8.3 Caching
+\subsubsection*{Caching}
+As informatin is used, it is copied into a faster storage system on a temporary
+basis. We will look in this storage system first before proceeding. If it is not
+in this cache, we will put a copy of it in the cache as we may need it soon.
+
+Because caches have limited size, \textbf{cache management} is an important
+design problem. Careful selection of the cache size and of a replacement policy
+can result in greatly increased performance.
+
+In a hierarchical storage structure, the same data may appear in different
+levels of the storage system.
+
+% Section 2.7 Operating-System Structure
+\subsection*{Operating-System Structure}
+A common approach is to partition the task into small components, or modules.
+Each module should be a well-defined portion of the system, with carefully
+defined inputs, outputs, and functions.
+
+% Subsection 2.7.1 Simple Structure
+\subsubsection*{Simple Structure}
+Manuy operating systesm do not have well-defined structures. A monolithic
+structure is difficult to implement and maintain; however, it has verly little
+overhead in the system call interface or in communication within the kernel.
+
+% Subsection 2.7.2 Layered Approach
+\subsubsection*{Layered Approach}
+The \textbf{layered approach} is when the operating system is broken ina number
+of layers (levels). The bottom layer (level 0) is teh hardware; the highest
+(layer $N$) is the user interface.
+
+An operatying-system layer is an implementation of an abstract object made up of
+data and the operations that can manipulate those data.
+
+The layers are selected so that each uses functions and services of only lower-
+level layers. If an error is found during the debugging of a particular layer,
+the error must be on that layer, because the layers below it are already
+debugged.
+
+% Subsection 2.7.3 Microkernels
+\subsubsection*{Microkernels}
+This method structure the operating system by removing all nonessential
+compoenents from the kernel and implementing them as system and user-level
+programs.
+
+The main function of the microkernel is to provide communication between the
+client program and the various services that are also running in user space.
+Communication is provided through \textbf{message passing}.
+
+% Subsection 2.7.4 Modules
+\subsubsection*{Modules}
+\begin{description}
+\item[Loadable kernel modules] The kernel has a set of core components and links
+in additional services via modules, either at boot time or during run time.
+\end{description}
+
+Linking services dynamically is preferable to adding new features directly to
+the kernel, which would require recompiling the kernel every time a change was
+made.
+
+% Subsection 2.7.5 Hybrid Systems
+\subsubsection*{Hybrid Systems}
+In practice, very few operating systems adopt a single, strictly defined
+sturcture. Instead, they combine different structures, resulting in hybrid
+systems that address performance, security, and usability issues.
+
+% Section 2.10 System Boot
+\subsection*{System Boot}
+The procedure of starting a computer by loading the kernel is known as \textbf{booting} the system. On most computer systems, a small piece of code known as the \textbf{bootstrap program} or \textbf{bootstrap loader} locates the kernel.
 
 \end{document}
