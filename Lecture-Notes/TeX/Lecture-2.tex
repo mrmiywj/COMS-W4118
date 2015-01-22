@@ -1,0 +1,201 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating System \\ COMS W4118 \\ Lecture 2}
+\author{Alexander Roth}
+\date{2015 -- 01 -- 22}
+\maketitle
+
+\section{High-level Overview}
+\subsection{Four Componenets of a Computer System}
+\begin{itemize}
+\item Layer system in computer architecture.
+\item User programs do not need to know about the low level hardware systems of
+a host.
+\item The operating system will provide an interface from the hardware to the
+user programs.
+\item Provides an API for user programs, so they don't need to know about
+hardware.
+\end{itemize}
+
+\subsection{Operating System Definition}
+\begin{itemize}
+\item OS manages all resources.
+\item Controls execution of programs to prevent errors and improper use of the
+computer.
+\item Decides between conflicting requests for efficient and fair resource use.
+\item The operating system has to juggle tasks.
+\item Operating system is a master, it controls and dictates.
+\item It is also a server because it takes commands from user programs and does
+things to the hardware according to the user program.
+\item No universally accepted definition.
+\item "Everything a vendor ships when you order an operating system" is a good
+approximation.
+\item "The one program running at all times on the computer" is the
+\textbf{kernel}.
+\item Everything else is either a system program or an application program.
+\item We will focus on the behavior of the kernel.
+\item The kernel is just one particular program that gets run first.
+\item The kernel runs as long as the computer is active.
+\item The kernel is a block of code that is sitting in memory that will only
+operate when the user applications request it to do something.
+\item The kernel goes through states of inactivity and activity.
+\end{itemize}
+
+\subsection{Computer System Organization}
+\begin{itemize}
+\item Computer-system operation
+\begin{itemize}
+\item One or more CPUs, device controllers connect through common bus providing
+access to shared memory
+\item Concurrent execution of CPU's and devices competing for memory cycles.
+\end{itemize}
+\item Registers are very small pieces of memory that are embedded into CPU's or
+pseudo-CPU's as typically a few bytes. Very fast memory embedded in processors.
+\item \textbf{Simplified:} CPU can only do operations on registers (not entirely
+true today).
+\item Each subsystem in the machine now has their own processing unit, sometimes
+even more powerful than the actual CPU.
+\end{itemize}
+
+\subsection{Common Functions of Interrupts}
+\begin{itemize}
+\item \textbf{von Neumann Architecture:} We have a memory that contains both
+program and data. The CPU will go through each instruction in memory (encoding
+in bytes) and will fetch other memory in order to handle operations.
+\item The program counter register handles which instruction is fetched by the
+machine.
+\item All the CPU does is run the program in memory.
+\item The CPU will keep executing instructions, when will it stop?
+\item The CPU runs on a timer, and when the timer runs down, control of the
+system is transferred to the operating system.
+\item Happens hundreds of times a second.
+\item When an timer interrupt comes in, the CPU jumps to a piece of known code
+within the operating system.
+\item This creates the illusion of multiple programs running at the same time,
+when in actuality one program is running at once, while the others are waiting
+in the background.
+\item CPU can only execute one thread of byte-code at a time. Then a time
+interrupt occurs.
+\item CPU will save the state to somewhere else and execute another program
+elsewhere.
+\item This is beneficial to multi-user systems, such as Unix.
+\item Operating systems have scheduling algorithms that handle which processes
+are being executed when and with what kind of priority they are given.
+\item The operating system will preempt programs in order to allow another
+process to run in the meantime.
+\item Interrupt transfers control to the interrupt service routine generally,
+through the \textbf{interrupt vector}, which contains the addresses of all the
+service routines.
+\item Interrupt architecture must save the address of the interrupted
+instruction.
+\end{itemize}
+
+\subsubsection{Interrupts}
+\begin{itemize}
+\item Three ways interrupts happen:
+\begin{enumerate}
+\item Timing interrupt: as described above
+\item All the controllers (I/O devices) have the ability to be interrupted by
+the disk. Example: The disk interrupt will tell the operating system that the
+information being read in from the disk is available. Typically scheduling
+algorithms give priority to I/O events as that is what users interact with. Used
+to signal completion of tasks or I/O errors.
+\item When a program fails, a software interrupt will occur. Error handling or
+errors will occur. The programmer will set up memory locations that are invalid,
+these areas will through interrupts if they are accessed.
+\end{enumerate}
+\item Switching from one program to another is very expensive. \textbf{Context
+switching}, must save state and data from program and then switch to another
+program and bring up the old state there.
+\item Exceptions occur from running a piece of code in the kernel that throws an
+error.
+\item System call mechanisms also piggy-back on interrupt mechanisms.
+\item Segmentation fault is a software interrupt.
+\end{itemize}
+
+\subsection{Interrupt Timeline}
+\begin{itemize}
+\item When a program requests an I/O, it will take quite some time for the CPU.
+\item You do not want to waste CPU time, but you want to know exactly when it is
+done, so we use interrupts.
+\end{itemize}
+
+\subsection{I/O Structure}
+Two ways to handle I/O:
+\begin{enumerate}
+\item Call I/O and have the CPU wait. (Old implementation)
+\item Operating system will juggle processes so you don't waste CPU.
+\end{enumerate}
+
+\subsection{Storage-Device Hierarchy}
+\begin{itemize}
+\item There's a memory hierarchy that everyone will learn if they take a
+database course.
+\begin{enumerate}
+\item Registers
+\item Cache
+\item Main Memory
+\item Solid-state disk
+\item Hard Disk
+\item Optical Disk
+\item Magnetic Tape
+\end{enumerate}
+\item Higher up; smaller, faster memory.
+\item Lower down; bigger, slower memory.
+\item \emph{Vector} is the best memory structure ever because the cache makes
+\emph{linked list} slow as fuck.
+\item A structure has to be aligned so that it fits into 1024 bytes.
+\item Making sure that code is easily accessed and easily cacheable is very
+important to the operating system.
+\end{itemize}
+
+\subsection{How a Modern Computer Works}
+\subsubsection{Old Method}
+\begin{itemize}
+\item The CPU issues an I/O request.
+\item The device it was issued to fulfills the request and sends back an
+interrupt.
+\item The CPU will transfer the data to a local buffer from the I/O device.
+\item Takes a long time.
+\end{itemize}
+
+\subsubsection{Modern Method}
+\begin{itemize}
+\item Direct Memory Access.
+\item CPU sends request to device.
+\item Device learns where to send the information and where to get it.
+\item Device doesn't need to interrupt the CPU.
+\end{itemize}
+
+\subsection{Transition from User to Kernel Mode}
+\begin{itemize}
+\item Timer to prevent infinite loop/process hogging resources
+\begin{itemize}
+\item Timer is set to interrupt the computer after some time period.
+\item Keep a counter that is decremented by the physical clock.
+\item Operating system set the counter (privileged instruction)
+\item When counter zero generates an interrupt
+\item Set up before scheduling process to regain control or terminate program
+that exceeds allotted time.
+\end{itemize}
+\item Dual modes of operation. Privileged operations can only occur when the CPU
+is in privileged mode (kernel mode).
+\item What is available to the user are C functions that act as system calls.
+\item Library code activates these smaller C functions.
+\item Bottom-level C functions are just wrappers around the assembly code.
+\end{itemize}
+
+\end{document}
