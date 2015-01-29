@@ -1,0 +1,155 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 3}
+\author{Alexnader Roth}
+\date{2015 -- 01 -- 29}
+\maketitle
+
+\section{System Calls}
+\begin{itemize}
+\item Programming interface to the services provided by the OS
+\item Typically written in a high-level language (C or C++)
+\item Mostly accepted by programs via a high-level. \textbf{Application
+Programming Interface (API)} rather than direct system call use.
+\item Three most common APIs are Win32 API for Windows, POSIX API for POSIX-
+based systems (including virtually all versions of UNIX, Linux, and Mac OS X),
+and Java API for the Java virtual machine (JVM)
+\end{itemize}
+
+Note that the system-call names used throught this text are generic.
+
+\begin{itemize}
+\item System calls are the entry point for kernel code.
+\item Kernel code only way to interact with raw memory, hardware.
+\item The kernel code is written already.
+\end{itemize}
+
+\section{System Call Implementation}
+\begin{itemize}
+\item Typically, a number associated with each system call
+\begin{itemize}
+\item \textbf{System-call interface} maintains a table indexed according to
+these numbers.
+\end{itemize}
+\item The system call interface invokes the intended system call in OS kernel
+and returns status of the system call and any return values.
+\item The caller need know nothing about how the system call is implemented.
+\begin{itemize}
+\item Just need to obey API and understand what OS will do as a result call.
+\item Most details of OS interface hidden from programmer by API
+\end{itemize}
+\end{itemize}
+
+\section{Parameter Passing}
+\begin{itemize}
+\item Parameters are stored into registers.
+\item Registers will be accessed later for function calls.
+\end{itemize}
+
+\section{Example: MS-DOS}
+\begin{itemize}
+\item Unix operating systems are designed to be multi-user and multi-process.
+\item The user methods are isolated from other user processes and the operating
+system itself.
+\item There are specific privileged operations that the user applications cannot
+access. Need to ask permission from the operating system.
+\item The C-wrapper functions are just a user level implementation, the C
+wrappers are a convenience.
+\item Because of such small memory size, it would crunch down and reduce size of
+shell to allow other programs to run.
+\item There was no concept of virtual memory. Every program worked with actual
+memory.
+\item There was no such thing as two programs running at the same time.
+\item You could write to any register you want; there was no such thing as
+privileged users.
+\end{itemize}
+
+\section{Microkernel System Structure}
+\begin{itemize}
+\item Two ways of structing systems
+\begin{enumerate}
+\item Microkernel - the kernel is very small, it only does memory management and
+scheduling. It has facilities for other programs to message each other. Separate
+out all the other subsystems. Very easy to maintain the core parts. The parts
+that can do privileged operations are very small and well-defined, but
+subsystems must do message passing between themselves to the kernel. There is a
+communication overheard.
+\item Monolithic - there is one large file that gets run. Everything is a
+function call within one program. Disadvantage of having to compile the whole
+kernel at once. You cannot add modules at run time. All parts of the kernel are
+in a single process; thus, it is prone to crashing.
+\end{enumerate}
+\end{itemize}
+
+\section{Kernel Modules}
+\begin{itemize}
+\item There is a logical separation between subsystems in a kernel.
+\item Modules can be loaded into and unloaded from the kernel at runtime.
+\end{itemize}
+
+\section{Hybrid Systems}
+\begin{itemize}
+\item Most modern operating systems are acutally not one pure modle
+\begin{itemize}
+\item Hybrid combines multiple approaches to address performance, security,
+usability needs.
+\end{itemize}
+\end{itemize}
+
+\section{Linux System Overiew: From Boot To Panic}
+\subsection{Boot Process}
+\begin{enumerate}
+\item When we boot up, the CPU begins with instructions running in ROM. Runs \textbf{power-on self-test (POST)}, checks that things are operating well.
+\item Jumps to the boot code in the first 440 bytes of the Master Boot Record (MBR). Very first sector of the disk drive.
+\begin{itemize}
+\item Parition - disk drive can be divide into logical sections and allow file systems in different logical directories.
+\end{itemize}
+\item MBR boot code locates and launches boot loader. We used GRUB. GRUB provides the user with the kernel menu. It locates the kernel image and allows the user which kernel to load.
+\item The Boot loader will load the kernel and launch it.
+\item The kernel has to run \texttt{initramfs} (initial RAM filesystem).
+\begin{itemize}
+\item Initial temporary root filesystem
+\item Contains device drivers needed to mount real root filesystem.
+\item Mounting means mapping a directory from one subtree to another logical directory tree.
+\item Allows for encapsulation between directories.
+\end{itemize} 
+\item Kernel switches to real root filesystem.
+\end{enumerate}
+
+\subsection{User Session}
+\begin{enumerate}
+\item \texttt{init} calls \texttt{getty}
+\begin{itemize}
+\item \texttt{getty} is called for each virtual terminal (normally 6 of them)
+\item \texttt{getty} checks user name and password against \texttt{/etc/passwd}
+\end{itemize}
+\item \texttt{getty} calls \texttt{login}, which then runs the user's shell 
+\begin{itemize}
+\item \texttt{login} sets the user's environment variables
+\item The user's shell is specified in \texttt{/etc/passwd}
+\end{itemize}
+\end{enumerate}
+
+\section{Process Control}
+\subsection{Displaying Process hierarchy}
+\begin{itemize}
+\item \texttt{ps} command displays what processes are running. 
+\item The always running process is \texttt{init}, which is process 1.
+\item When a parent process dies, the child process is orphaned. This orphaned process will be inherited by \texttt{init}.
+\item A zombie process is a child function that has ended but the parent is waiting on that process to return.
+\end{itemize}
+
+\end{document}
