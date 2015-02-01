@@ -18,6 +18,8 @@
 \date{2015 -- 01 -- 21}
 \maketitle
 
+
+
 % Operating System Concepts Essentials Second Edition
 \section*{Operating System Concepts Essentials}
 
@@ -182,20 +184,20 @@ routine in the operating system, and the mode bit is set to kernel mode.
 
 % Subsection 1.5.2 Timer
 \subsection*{Timer}
-We cannot allow a user program to get stuck in an infinte loop or to fail to
+We cannot allow a user program to get stuck in an infinite loop or to fail to
 call system services and never return control to the operating system.  Thus we
 use a \textbf{timer}. A timer can be set to interrupt the computer after a
 specified period. A \textbf{variable timer} is generally implemented by a fixed-
 rate clock and a counter.
 
-Before turning over control to the user, teh operating system ensures that the
+Before turning over control to the user, the operating system ensures that the
 timer is set to interrupt. If the timer interrupts, control transfers
 automatically to the operating system, which may treat the interrupt as a fatal
 error or may give the program more time.
 
 % Subsubsection 1.8.3 Caching
 \subsubsection*{Caching}
-As informatin is used, it is copied into a faster storage system on a temporary
+As information is used, it is copied into a faster storage system on a temporary
 basis. We will look in this storage system first before proceeding. If it is not
 in this cache, we will put a copy of it in the cache as we may need it soon.
 
@@ -261,6 +263,9 @@ systems that address performance, security, and usability issues.
 
 % Section 2.10 System Boot
 \subsection*{System Boot}
-The procedure of starting a computer by loading the kernel is known as \textbf{booting} the system. On most computer systems, a small piece of code known as the \textbf{bootstrap program} or \textbf{bootstrap loader} locates the kernel.
+The procedure of starting a computer by loading the kernel is known as
+\textbf{booting} the system. On most computer systems, a small piece of code
+known as the \textbf{bootstrap program} or \textbf{bootstrap loader} locates the
+kernel.
 
 \end{document}
