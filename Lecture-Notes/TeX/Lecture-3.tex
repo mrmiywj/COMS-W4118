@@ -112,20 +112,26 @@ usability needs.
 \section{Linux System Overiew: From Boot To Panic}
 \subsection{Boot Process}
 \begin{enumerate}
-\item When we boot up, the CPU begins with instructions running in ROM. Runs \textbf{power-on self-test (POST)}, checks that things are operating well.
-\item Jumps to the boot code in the first 440 bytes of the Master Boot Record (MBR). Very first sector of the disk drive.
+\item When we boot up, the CPU begins with instructions running in ROM. Runs
+\textbf{power-on self-test (POST)}, checks that things are operating well.
+\item Jumps to the boot code in the first 440 bytes of the Master Boot Record
+(MBR). Very first sector of the disk drive.
 \begin{itemize}
-\item Parition - disk drive can be divide into logical sections and allow file systems in different logical directories.
+\item Parition - disk drive can be divide into logical sections and allow file
+systems in different logical directories.
 \end{itemize}
-\item MBR boot code locates and launches boot loader. We used GRUB. GRUB provides the user with the kernel menu. It locates the kernel image and allows the user which kernel to load.
+\item MBR boot code locates and launches boot loader. We used GRUB. GRUB
+provides the user with the kernel menu. It locates the kernel image and allows
+the user which kernel to load.
 \item The Boot loader will load the kernel and launch it.
 \item The kernel has to run \texttt{initramfs} (initial RAM filesystem).
 \begin{itemize}
 \item Initial temporary root filesystem
 \item Contains device drivers needed to mount real root filesystem.
-\item Mounting means mapping a directory from one subtree to another logical directory tree.
+\item Mounting means mapping a directory from one subtree to another logical
+directory tree.
 \item Allows for encapsulation between directories.
-\end{itemize} 
+\end{itemize}
 \item Kernel switches to real root filesystem.
 \end{enumerate}
 
@@ -136,7 +142,7 @@ usability needs.
 \item \texttt{getty} is called for each virtual terminal (normally 6 of them)
 \item \texttt{getty} checks user name and password against \texttt{/etc/passwd}
 \end{itemize}
-\item \texttt{getty} calls \texttt{login}, which then runs the user's shell 
+\item \texttt{getty} calls \texttt{login}, which then runs the user's shell
 \begin{itemize}
 \item \texttt{login} sets the user's environment variables
 \item The user's shell is specified in \texttt{/etc/passwd}
@@ -146,10 +152,12 @@ usability needs.
 \section{Process Control}
 \subsection{Displaying Process hierarchy}
 \begin{itemize}
-\item \texttt{ps} command displays what processes are running. 
+\item \texttt{ps} command displays what processes are running.
 \item The always running process is \texttt{init}, which is process 1.
-\item When a parent process dies, the child process is orphaned. This orphaned process will be inherited by \texttt{init}.
-\item A zombie process is a child function that has ended but the parent is waiting on that process to return.
+\item When a parent process dies, the child process is orphaned. This orphaned
+process will be inherited by \texttt{init}.
+\item A zombie process is a child function that has ended but the parent is
+waiting on that process to return.
 \end{itemize}
 
 \end{document}
