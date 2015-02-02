@@ -1,0 +1,184 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\newcommand{\code}{\texttt}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Extras 1}
+\author{Alexander Roth}
+\date{2015 -- 01 -- 29}
+\maketitle
+
+\section*{Extra Questions}
+\begin{enumerate}
+\item What is partitioning?
+
+Partitioning a hard drive allows one to logically divide the available space
+into sections that can be accessed independently of one another. It is the act
+of dividing a hard disk drive into multiple logical storage units refered to as
+\emph{partitions}, to treat one physical disk drive as if it were multiple
+disks, so that a different file system can be used on each partition.
+
+\item What is a file system?
+
+A \emph{file system} is a means to organize data expected to be retained after a
+program terminates by providing procedures to store, retrieve and update data,
+as well as manage the available space on the device(s) which contain it. A file
+system organizes data in an efficient manner and is tuned to the specific
+characteristics of the device.
+
+\item We chose ext4 file system. What other file systems are there?
+
+There are a number of different file systems. According to the Arch Linux wiki,
+the file systems are
+\begin{description}
+\item[Btrfs] ``Better FS'', is a \textbf{new filesystem with powerful features
+similar to Sun/Oracle's excellent ZFS}.
+\item[exFAT] \textbf{Microsoft file system optimized for flash drive}
+\item[ext2] \textbf{Second Extended Filesystem} is an established, mature
+GNU/Linux filesystem that is very stable.
+\item[ext3] \textbf{Third Extended Filesystem} is essentially the ext2 system
+with journaling support and write barriers.
+\item[ext4] \textbf{Fourth Extended Filesystem} is a newer filesystem that is
+also compatible with ext2 and ext3. It provides support for volumes with sizes
+up to 1 exabyte and files sizes up to 16 terabytes.
+\item[F2FS] \textbf{Flash-Friendly File System} is a flash file system created
+by Kim Jaegeuk at Samsung for the Linux operating system kernel.
+\item[JFS] IBM's \textbf{Journaled File System} was the first filesystem to
+offer journaling.
+\item[NILFS2] \textbf{New Implementation of a Log-structure File System} was
+developed by NTT. It records all data in a continuous log-like format that is
+only append to and never overwritten.
+\item[NTFS] \textbf{File system used by Windows.} NTFS has several technical
+improvements over FAT and HPFS (High Performance File System), such as improved
+support for metadata, and the use of advanced data structure to improve
+performance, reliability, and disk space utilization, plus additional
+extensions, such as security access control lists and file system journaling.
+\item[Reiser4] \textbf{Successor to the ReiserFS file system}, developed from
+scratch by Namesys and sponsored by DARPA as well as Linspire, it uses B*-trees
+in conjunction with the dancing tree balancing approach, in which underpopulated
+nodes will not be merged until a flush to disk except under memory pressure or
+when a transaction completes.
+\item[ReiserFS] \textbf{Hans Reiser's high-performance journaling FS (v3)} uses
+a very interesting method of data throughput based on an unconventional and
+creative algorithm.
+\item[VFAT] \textbf{Virtual File Allocation Table} is technically simple and
+supported by virtually all existing operating systems.
+\item[XFS] \textbf{Early journaling filesystem originally developed by Silicon
+Graphics} for the IRIX operating system and ported to GNU/Linux. It provides
+very fast throughput on large files and filesystems and is very fast at
+formatting and mounting.
+\item[ZFS] \textbf{Combined file system and logical volume manager designed by
+Sun Microsystems}
+\end{description}
+
+\item What is a swap partition or a swap file?
+
+Linux divides its physical RAM into chunks of memory called pages. Swapping is
+the process whereby a page of memory is copied to the preconfigured space on the
+hard disk, called swap space, to free up that page of memory. The combined sizes
+of the physical memory and the swap space is the amount of virtual memory
+available.
+
+\item What's the difference between the two files?
+
+The swap partition is an independent section of the hard disk used solely for
+swapping; no other files can reside there. The swap file is a special file in the
+filesystem that resides amongst your system and data files.
+
+\item What does mounting a file system mean?
+
+The \code{mount} command instructs the operating system that a file system is
+ready for use, and associates it with a particular point in the overall file
+system hierarchy and sets options relating to its access. Mounting makes file
+systems, files, directories, devices, and special files available to the user.
+
+\item What does \code{/etc/fstab} contain?
+
+The \code{/etc/fstab} file can be used to define how disk partitions, various
+other block devices, or remote filesystems should be mounted into the
+filesystem.
+
+Each filesystem is described in a separate line. These definitions will be
+converted into \code{systemd} mount units dynamically at boot, and when the
+configuration of the system manger is reloaded.
+
+\item What is \code{chroot}?
+
+\code{Chroot} is an operation that changes the apparent root directory for the
+current running process and their children. A program that is run in such a
+modified environment cannot access files and commands outside that environmental
+directory tree. This modified environment is called a \emph{chroot jail}.
+Changing root is commonly done for performing system maintenance on systems
+where booting and/or logging in is no longer possible.
+
+\item Why did the installation process have \code{chroot}?
+
+The installation process has \code{chroot} because we were modifying the system
+without a root user or without any other users in the system. Thus, we needed a
+way to access the system directory without creating a root user. The system
+still did not have a bootloader installed.
+
+\item Did you reboot before or after \code{chroot}?
+
+Rebooted after the \code{chroot} once the bootloader was installed.
+
+\item Can you describe how the installation works at a very high level in a few
+sentences?
+
+Yes, first we set up an internet connection so we can download from our mirror
+sites during the installation process. Then, we prepare a storage device by
+partition the drive and attach our filesystem (ext4) to it. We then mount the
+disk image file system from the arch linux image onto our virtual machine. Next,
+we download the necessary packages from the base sites and customize the kernel
+with the necessary regional information. Finally, we download the bootloader and
+build it. We then reboot the system and eject the disk image.
+
+\item What does \code{systemctl enable dhcpcd.service} do?
+
+\code{systemctl} is the command run to control \code{systemd} (the service
+manager for Linux). By calling \code{systemctl enable dhcpcd.service}, we are
+enabling the dhcpcd.service unit at bootup of the virtual machine.
+
+\item Does it have any immediate effects?
+
+No, it does not.
+
+\item Does it set something up for the next reboot?
+
+Yes, the service will be enabled on reboot. More specifically the dhcpcd service
+will be enabled after reboot.
+
+\item What is \code{sudo}?
+
+\code{sudo} (``substitute user do'') allows a system administrator to delegate
+authority to give certain users (or groups of users) the ability to run some (or
+all) commands as root or another user while providing an audit trail of the
+commands and their arguments.
+
+\item How does \code{sudo} work?:
+
+\code{sudo} enables root privileges only when needed as per the \code{setuid}
+command. It sets the effective user ID of the calling process.
+
+\item How does the Arch Linux packaging system work?
+\item When you install software through pacman, do you get the source code too?
+If not, how do you go about getting it?
+\item What is an X server?
+\item Can you describe the client-server architecture of the X window system?
+\item What does startx or startxfce4 do?
+\item What is a kernel module?
+\item What kernel modules are you running?
+\end{enumerate}
+
+\end{document}
