@@ -1,0 +1,616 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\newcommand{\code}{\texttt}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Reading Notes 2}
+\author{Alexander Roth}
+\date{2015 -- 01 -- 31}
+\maketitle
+
+\section*{Advanced Programming in the Unix Environment \\
+Chapter 10: Signals}
+\subsection*{10.1 Introduction}
+\begin{itemize}
+\item Signals are software interrupts.
+\item Signals provide a way of handling asynchronous events.
+\end{itemize}
+
+\subsection*{10.2 Signal Concepts}
+\begin{itemize}
+\item Every signal has a name and all names begin with the three characters
+\texttt{SIG}.
+\item Signal names are all defined by positive integer constants in the header
+\texttt{<signal.h>}.
+\item No signal has a signal number of 0.
+\item It is considered bad form for the kernel to include header files meant
+for user-level applications, so information is placed in the kernel header and
+then included by the user-level header. Thus, we have \code{<sys/signal.h>}
+for Mac OSX.
+\item Numerous conditions can generate a signal:
+\begin{itemize}
+\item Terminal-generated signals occur when users press certain terminal keys.
+\item Hardware exceptions generate signals.
+\item The \code{kill()} functions allow us to send signals to other processes.
+\item Software conditions can generate signals when a process should be notified
+by various events.
+\end{itemize}
+\item The \emph{disposition} or \emph{action} associated with the signal can be
+one of three things:
+\begin{enumerate}
+\item Ignore the signal. (Note: \code{SIGKILL} and \code{SIGSTOP} can never
+be ignored.)
+\item Catch the signal. (Note: \code{SIGKILL} and \code{SIGSTOP} can never
+be caught.)
+\item Let the default action apply.
+\end{enumerate}
+\end{itemize}
+
+\subsection*{10.3 \code{signal} function}
+\texttt{\#include <signal.h>}
+
+\texttt{void (*signal(int \emph{signo}, void (*\emph{func})(int)))(int);}
+
+Returns: previous disposition of signal if OK, \code{SIG\_ERR} on error
+
+\begin{itemize}
+\item The \emph{signo} argument is just the name of the signal.
+\item The value of \emph{func} is
+\begin{enumerate}
+\item the constant \code{SIG\_IGN}
+\item the constant \code{SIG\_DFL}
+\item the address of a function to be called when the signal occurs
+\end{enumerate}
+\item \code{SIG\_IGN} tells the system to ignore the signal.
+\item \code{SIG\_DFL} tells the system to follow the default action associated
+with the signal.
+\item When the address of a function is given, we are arranging a ``catch''
+within the system.
+\item The function requires two arguments
+\begin{enumerate}
+\item The first argument, \emph{signo}, is an integer.
+\item The second argument is a pointer to a function that takes a single
+interger argument and returns nothing.
+\end{enumerate}
+\end{itemize}
+
+\subsubsection*{Program Start-Up}
+\begin{itemize}
+\item When a program is executed, the status of all signals is either default or
+ignore.
+\item We are not able to determine the current disposition of a signal without
+changing the disposition of the signal.
+\end{itemize}
+
+\subsubsection*{Process Creation}
+\begin{itemize}
+\item When a process calls \code{fork}, the child inherits the parent's signal
+dispositions.
+\end{itemize}
+
+\subsection*{10.4 Unreliable Signals}
+\begin{itemize}
+\item In earlier versions of the UNIX system, signals were unreliable; this
+means that signals could get lost: a signal could occur and the process would
+never know about it.
+\item No way to remember if a signal occured without having to do anything about
+it. Could only ignore signal or act on it.
+\end{itemize}
+
+\subsection*{10.5 Interrupted System Calls}
+\begin{itemize}
+\item If a process caught a signal while the process was blocked in a ``slow''
+system call, the acll was interrupted.
+\item The system returned an error and \code{errno} was set to \code{EINTR}.
+\item The slow system calls are those that can block forever.
+\begin{itemize}
+\item Reads that can block the caller forever if data isn't present with certain
+file types.
+\item Write that can block the caller forever if the data can't be accepted
+immediately by these same file types.
+\item Opens on certain file types that block the caller until some condition
+occurs.
+\item The \code{pause} function and the \code{wait} function.
+\item Certain \code{ioctl} operations
+\item Some of the interprocess communication functions
+\end{itemize}
+\item \code{wait} and \code{waitpid} are always interrupted when a signal is
+caught.
+\end{itemize}
+
+\subsection*{10.6 Reentrant Functions}
+\begin{itemize}
+\item When a signal that is being caught is handled by a process, the normal
+sequence of instructions begin executed by the process is temporarily
+interrupted by the signal handler.
+\item If the signal handler returns, then the normal sequence of instructions
+that the process was executing when the signal was caught continues executing.
+\item The Single UNIX Specification specifies the functions that are guaranteed
+to be safe to call from within a signal handler.
+\item These functions are reetrant and called \emph{async-signal safe}. They
+block any signals during operation if delivery of a signal might cause
+inconsistencies.
+\item As a general rule, when calling fucntions from a signal handler, we should
+save and restore \code{errno}.
+\item If we call a nonreentrant function from a signal handler, the results are
+unpredictable.
+\end{itemize}
+
+\section*{Advanced Programming in the Unix Environment \\
+Chapter 3: File I/O}
+\subsection*{3.1 Introduction}
+\begin{itemize}
+\item Most file I/O on a UNIX system can be performed using only five functions:
+\begin{enumerate}
+\item \code{open}
+\item \code{read}
+\item \code{write}
+\item \code{lseek}
+\item \code{close}
+\end{enumerate}
+\item \emph{Unbuffered I/O} means that each \code{read} or \code{write} invokes
+a system call in the kernel.
+\end{itemize}
+
+\subsection*{3.2 File Descriptors}
+\begin{itemize}
+\item A file descriptor is a non-negative integer, used to reference a file by
+the kernel.
+\item File descriptors 0, 1, and 2 are Standard Input, Standard Output, and
+Standard Error respectively.
+\end{itemize}
+
+\subsection*{3.3 \code{open} and \code{openat} Functions}
+\code{\#include <fctnl.h>}
+
+\code{int open(const char *\emph{path}, int \emph{oflag}, \ldots \,/* mode\_t
+\emph{mode} */ );}
+
+\code{int openat(int \emph{fd}, const char *\emph{path}, int \emph{oflag},
+\ldots\,/* mode\_t \emph{mode} */);}
+
+Both return: file descriptors if OK, -1 on error
+
+\begin{itemize}
+\item The \emph{path} parameter is the name of the file to open or create.
+\item The function has a multitude of options, which are specified by the
+\emph{oflag} argument.
+\item The file descriptor returned by \code{open} and \code{openat} is
+guaranteed to be the lowest-numbered unused descriptor.
+\item The \emph{fd} parameter for \code{openat} has three use cases:
+\begin{enumerate}
+\item The \emph{path} parameter specifies an absolute pathname. \emph{fd} is
+ignored.
+\item The \emph{path} parameter specifies a relative pathname and the \emph{fd}
+parameter is a file descriptor that specifies the starting location in the file
+system where the relative pathname is to be evaluated.
+\item The \emph{path} parameter specifies a relative pathname and the \emph{fd}
+parameter has the special value \code{AT\_FDCWD}.
+\end{enumerate}
+\item \code{openat} addresses two problems
+\begin{enumerate}
+\item It gives threads a way to use relative pathnames to open files in
+directories other than the current working directory.
+\item It provides a way to avoid time-of-check-to-time-of-use (TOCTTOU) errors
+\end{enumerate}
+\item TOCTTOU errors is the idea that a program is vulnerable if it makes two
+file-based function calls where the second call depends on the results of the
+first call. because the two calls are not atomic, the file can change between
+the two calls, thereby invalidating the results of the first call.
+\end{itemize}
+
+\subsection*{3.4 \code{creat} Function}
+\code{\#include <fcntl.h>}
+
+\code{int creat(const char *\emph{path}, mode\_t \emph{mode});}
+Returns: file descriptor opened for write-only if OK, -1 on error
+
+\begin{itemize}
+\item \code{creat} is equivalent to \code{open(\emph{path}, O\_WRONLY | O\_CREAT
+| O\_TRUNC, \emph{mode});}
+\item \code{creat} only opens a file for writing.
+\end{itemize}
+
+\subsection*{3.5 \code{close} Function}
+\code{\#include <unistd.h>}
+
+\code{int close(int \emph{fd});}
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item When a process terminates, all of its open files are closed automatically
+by the kernel.
+\end{itemize}
+
+\subsection*{3.6 \code{lseek} Function}
+\code{\#include <unistd.h>}
+
+\code{off\_t lseek(int \emph{fd}, off\_t \emph{offset}, int \emph{whence});}
+
+Returns: new file offset if OK, -1 on error
+
+\begin{itemize}
+\item The interpretation of the \emph{offset} depends on the value of the
+\emph{whence} argument.
+\begin{itemize}
+\item If \emph{whence} is \code{SEEK\_SET}, the file's offset is set to
+\emph{offset} bytes from the begging of the file.
+\item If \emph{whence} is \code{SEEK\_CUR}, the file's offset is set to its
+current value plus the \emph{offset}.
+\item If \emph{whence} is \code{SEEK\_END}, the file's offset is set to the size
+of the file plus the \emph{offset}.
+\end{itemize}
+\item A file's current offset must normally be a non-negative integer. However,
+certain devices could allow negative offsets.
+\item Thus, the return value from \code{lseek} should be tested against -1 if
+there is an error.
+\item \code{lseek} only records the current file offset within the kernel -- it
+does not cause any I/O to take place.
+\item If the offset is greater than the file's current size, the next
+\code{write} call is said to \emph{extend} the file. This is also known as
+creating a hole in a file and is allowed.
+\item A hole in a file isn't required to have storage backing it on disk.
+\end{itemize}
+
+\subsection*{3.7 \code{read} Function}
+\code{\#include <unistd.h>}
+
+\code{ssize\_t read(int \emph{fd}, void *\emph{buf}, size\_t \emph{nbytes});}
+
+Returns: number of bytes read, 0 if end of file, -1 on error
+
+\begin{itemize}
+\item There are several cases in which the number of bytes actually read is less
+than the amount requested:
+\begin{itemize}
+\item When reading from a regular file, if the end of the file is reached before
+the requested number of bytes have been read.
+\item When reading from a terminal device.
+\item When reading from a network.
+\item When reading from a pipe or FIFO.
+\item When reading from a record-oriented device.
+\item When interrupted by a signal and a partial amount of data has already been
+read.
+\end{itemize}
+\item The read operation starts at the file's current offset. Before a
+successful return, the offset is incremented by the number of bytes actually
+read.
+\end{itemize}
+
+\subsection*{3.8 \code{write} Function}
+\code{\#include<unistd.h>}
+
+\code{ssize\_t write(int \emph{fd}, const void *\emph{buf}, size\_t
+\emph{nbytes});}
+
+Returns: number of bytes written if OK, -1 on error
+
+\begin{itemize}
+\item A common cause for a \code{write} error is either filling up a disk or
+exceeding the file size limit for a given process.
+\item The write operation starts at the file's current offset.
+\item If \code{O\_APPEND} option was specified when the file was opened, the
+file's offset is set to the current end of the file before each write operation.
+\item After a successful write, the file's offset is incremented by the number
+of bytes actually written.
+\end{itemize}
+
+\subsection*{3.9 I/O Efficiency}
+\begin{itemize}
+\item When sequential reads are detected, the system tries to read in more data
+than an application requests, assuming that the application will read it
+shortly.
+\end{itemize}
+
+\subsection*{3.10 File Sharing}
+\begin{itemize}
+\item The UNIX System supports the sharing of open files among different
+processes.
+\item The kernel uses three data structures to represent an open file, and the
+relationships among them determine the effect on process has on another with
+regard to file sharing.
+\begin{enumerate}
+\item Every process has an entry in the process table. Within each process table
+entry is a table of open file descriptors (a vector with one entry per
+descriptor). Associated with each descriptor are
+\begin{enumerate}
+\item The file descriptor flags
+\item A pointer to a file table entry
+\end{enumerate}
+\item The kernel maintains a file table for all open files. Each file table
+entry contains
+\begin{enumerate}
+\item The file status flags for the file.
+\item The current file offset
+\item A pointer to the v-node table entry for the file.
+\end{enumerate}
+\item Each open file has a v-node structure that contains information about the
+type of file and pointers to functions that operate on the file.
+\end{enumerate}
+\item Each process that opens a file gets its own file table entry, but only a
+single v-node table entry is required for a given file. This is so each process
+has its own current offset for the file.
+\end{itemize}
+
+\subsection*{3.11 Atomic Operations}
+\subsubsection*{Appending to a File}
+\begin{itemize}
+\item Any operation that requires more than one function call cannot be atomic,
+as there is always the possibility that the kernel might temporarily suspend the
+process between the two function calls.
+\end{itemize}
+
+\subsubsection*{\code{pread} and \code{pwrite} Functions}
+\code{\#include <unistd.h>}
+
+\code{ssize\_t pread(int \emph{fd}, void *\emph{buf}, size\_t \emph{nbytes},
+off\_t \emph{offset});}
+
+Returns: number of bytes read, 0 if end of file, -1 on error
+
+\code{ssize\_t pwrite(int \emph{fd}, const void *\emph{buf}, size\_t
+\emph{nbytes}, off\_t \emph{offset});}
+
+Returns: number of bytes written if OK, -1 on error
+
+\begin{itemize}
+\item Calling \code{pread} is equivalent to calling \code{lseek} followed by a
+call to \code{read}, with the following exceptions.
+\begin{itemize}
+\item There is no way to interrupt the two operations that occur when we call
+\code{pread}.
+\item The current file offset is not updated.
+\end{itemize}
+\item Calling \code{pwrite} is equivalent to calling \code{lseek} followed by a
+call to \code{write}.
+\end{itemize}
+
+\subsubsection*{Creating a File}
+\begin{itemize}
+\item In general, the term \emph{atomic operation} refers to an operation that
+might be composed of multiple steps.
+\item If the operation is performed atomically, either all the steps are
+performed (on success) or none are performed (on failure).
+\item It must not be possible for only a subset of the steps to be performed.
+\end{itemize}
+
+\subsection*{3.12 \code{dup} and \code{dup2} Functions}
+\code{\#include <unistd.h>}
+
+\code{int dup(int \emph{fd});}
+
+\code{int dup2(int \emph{fd}, int \emph{fd2});}
+
+Both return: new file descriptor if OK, -1 on error
+
+\begin{itemize}
+\item The new file descriptor returned by \code{dup} is guaranteed to be the
+lowest-numbered available file descriptor.
+\item With \code{dup2}, the value of the new file descriptor is specified with
+the \code{dup2} argument.
+\item The new file descriptor that is returned as the value of the functions
+shares the same file table entry as the \emph{fd} argument.
+\end{itemize}
+
+\subsection*{3.13 \code{sync}, \code{fsync}, and \code{fdatasynch}
+Functions}
+\begin{itemize}
+\item When we write data to a file, the data is normally copied by the kernel
+into one of its buffers and queued for writing to disk at some later time
+(\emph{delayed write}).
+\item The kernel eventually writes all the delayed-write blocks to disk.
+\item To ensure consistency of the file system with the buffers, we use the
+\code{sync}, \code{fsync}, and \code{fdatasync} functions.
+\end{itemize}
+
+\code{\#include <unistd.h>}
+
+\code{int fsync(int \emph{fd});}
+
+\code{int fdatasync(int \emph{fd});}
+
+Returns: 0 if OK, -1 on error\\
+
+\code{void sync(void);}
+
+\begin{itemize}
+\item The function \code{sync} is called periodically from a system daemon,
+often called \code{update}.
+\item The function \code{fsync} refers only to a single file, specified by the
+file descriptor \emph{fd}, and waits for the disk writes to complete before
+returning.
+\item The \code{fdatasync} function is similar to \code{fsync}, but it affects
+only the data portions of a file.
+\end{itemize}
+
+
+\section*{Advanced Programming in the Unix Environment \\
+Chapter 8: Process
+Control}
+\subsection*{8.2 Process Identifiers}
+\begin{itemize}
+\item Every process has a unique process ID, a non-negative integer.
+\item As processes terminate, their IDs become candidates for reuse after some
+time has passed.
+\item Process ID 0 is usually the scheduler process and is often known as the
+\emph{swapper}.
+\item Process ID 1 is usually the \code{init} process and is invoked by the
+kernel at the end of the bootstrap procedure.
+\item \code{init} reads the system-dependent initialization files and brings the
+system to a certain state.
+\item \code{init} never dies and is a normal user process, not a system process
+like the swapper.
+\item The following functions return identifiers for processes
+\end{itemize}
+
+\code{\#include <unistd.h>}
+
+\code{pid\_t getpid(void);}
+
+Returns: process ID of calling process\\
+
+\code{pid\_t getppid(void);}
+
+Returns: parent process ID of calling process\\
+
+\code{uid\_t getuid(void);}
+
+Returns: real user ID of calling process\\
+
+\code{uid\_t geteuid(void);}
+
+Returns: effective user ID of calling process \\
+
+\code{gid\_t getgid(void);}
+
+Returns: real group ID of calling process\\
+
+\code{gid\_t getegid(void);}
+
+Returns: effective group ID of calling process
+
+\begin{itemize}
+\item Note that none of these functions has an error return.
+\end{itemize}
+
+\subsection*{8.3 \code{fork} Function}
+\begin{itemize}
+\item An existing process can create a new one by calling the \code{fork}
+function.
+\end{itemize}
+
+\code{\#include <unistd.h>}
+
+\code{pid\_t fork(void);}
+
+Returns: 0 in child, process ID of child in parent
+
+\begin{itemize}
+\item The new process created by \code{fork} is called the \emph{child process}.
+\item The function is called once but returns twice. The return value in the
+child is 0, but the return value in the parent is the process ID of the new
+child.
+\item A process can have more than one child, and there is no function that
+allows a process to obtain the process IDs of its children.
+\item \code{fork} returns 0 to the child because a process can only have a
+single parent.
+\item The child can always call \code{getppid} to obtain the process ID of its
+parent.
+\item The child is a copy of the parent.
+\item In general, we never know whether the child starts executing before the
+parent or vice versa (this is determined by the scheduling algorithm used in the
+kernel).
+\end{itemize}
+
+\subsubsection*{File Sharing}
+\begin{itemize}
+\item One characteristic of \code{fork} is that al file descriptors that are
+open in teh parent are duplicated in the child.
+\item It is important that the parent and the child share the same file offset.
+\item If both parent and child write to the same descriptor, without any form of
+synchronization, their output will be intermixed.
+\item Besides the open files, numerous other properties of the parent are
+inherited by the child:
+\begin{itemize}
+\item Real user ID, real group ID, effective user ID, and effective group ID
+\item Supplementary group IDs
+\item Process group ID
+\item Session ID
+\item Controlling terminal
+\item The set-user-ID and set-group-ID flags
+\item Current working directory
+\item Root directory
+\item File mode creation mask
+\item Signal mask and dispositions
+\item The close-on-exec flag for any open file descriptors
+\item Environment
+\item Attached shared memory segments
+\item Memory mappings
+\item Resource limits
+\end{itemize}
+\item The differences between the parent and child are
+\begin{itemize}
+\item The return values from \code{fork} are different
+\item The process IDs are different
+\item The two processes have different parent process IDs
+\item The child's \code{tms\_utime}, \code{tms\_stime}, \code{tms\_cutime}, and
+\code{tms\_cstime} values are set to 0.
+\item File locks set by the parent are not inherited by the child.
+\item Pending alarms are cleared for the child.
+\item The set of pending signals for the child is set to the empty set.
+\end{itemize}
+\item The two main reasons for \code{fork} to fail are
+\begin{enumerate}
+\item if too many processes are already in the system
+\item if the total number of processes for this real user ID excees the system's
+limit
+\end{enumerate}
+\item When a process wants to duplicate itself so that the parent and the child
+can each execute different sections of code at the same time.
+\item When a process wants to execute a different program.
+\end{enumerate}
+\item A \code{fork} followed by an \code{exec} is called a \emph{spawn}.
+\end{itemize}
+
+\subsection*{8.4 \code{vfork} Function}
+\begin{itemize}
+\item The \code{vfork} function creates the new process without copying the
+address space of the parent into the child. The child runs in the address space
+of the parent until it calls either \code{exec} or \code{exit}.
+\item \code{vfork} guarantees that the child runs first, until the child calls
+\code{exec} or \code{exit}.
+\end{itemize}
+
+\subsection*{8.5 \code{exit} Functions}
+\begin{itemize}
+\item A process can terminate normally in five ways:
+\begin{enumerate}
+\item Executing a \code{return} from the \code{main} function.
+\item Calling the \code{exit} function.
+\item Calling the \code{\_exit} or \code{\_Exit} function.
+\item Executing a \code{return} from the start routine of the last thread in the
+process.
+\item Calling the \code{pthread\_exit} function from the last thread in the
+process.
+\end{enumerate}
+\item The three forms of abnormal termination are as follows:
+\begin{enumerate}
+\item Calling \code{abort}
+\item When the process receives certain signals.
+\item The last thread responds to a cancellation request.
+\end{enumerate}
+\item When a parent terminates before the child process terminates, the
+\code{init} process becomes the parent process. In such a case, we say that the
+process has been inherited by \code{init}.
+\item This guarantees that every process has a parent.
+\item The kernel keeps a small amount of information for every terminating
+proces so that the information is available when the parent of the terminating
+processs calls \code{wait} or \code{waitpid}.
+\item This information consists of the process ID, the terminal status of the
+process, and the amount of CPU time taken by the process.
+\item A process that has terminated, but whose parent has not yet waited for it,
+it called a \emph{zombie}.
+\end{itemize}
+
+\subsection*{8.6 \code{wait} and \code{waitpid} Functions}
+
+\subsection*{8.7 \code{waitid} Function}
+
+\subsection*{8.8 \code{wait3} and \code{wait4} Functions}
+
+\subsection*{8.9 Race Conditions}
+
+\subsection*{8.10 \code{exec} Functions}
+
+\end{document}
