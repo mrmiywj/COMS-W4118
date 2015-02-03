@@ -1,0 +1,82 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\newcommand{\code}{\texttt}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 4}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 03}
+\maketitle
+
+\section*{\code{signal}}
+\begin{itemize}
+\item \code{signal} is the typical introduction to asynchronous operation in the
+kernel.
+\item \code{signal} takes two arguments, which signal it is, and a pointer to a
+function.
+\item The function pointer takes one interger and returns nothing.
+\item \code{signal} returns \code{SIG\_ERR} if something goes wrong.
+\item The signal handler can be any function that takes one integer and returns
+nothing.
+\item The return value of \code{signal} is the previous signal handler.
+\item We include the \code{perror} block for when we register our signal
+handler.
+\item Signal Handler must be written in a very careful manner so it does not
+interrupt what is currently happening in the machine.
+\item \code{printf} is a non-reentrant function.
+\item Signal handlers are concept that belong to processes, not functions.
+\item \code{kill} sends a signal to a process.
+\item You can catch any signal and not die.
+\end{itemize}
+
+\section*{X Session}
+\begin{itemize}
+\item When you boot up a virtual console, you have to start xfce4
+\item \code{xinit} reads the window configurations and overall configurations
+for the machine.
+\item \code{Xorg.bin} takes control of the graphics card and draw in the
+objects.
+\item Old name for \code{Xorg} was just \code{X}.
+\item X windows system controls the graphical interface.
+\item The terminal program is a program that makes a connection to the X server.
+It is a network application.
+\item Google X forwarding.
+\item Window manager is responsible for resizing windows and all that jazz.
+\item Things are pretty modular in unix systems.
+\item Remember to take snapshots and how to work with the virtual box.
+\item Key idea: Having a layer of systems versus having direct access to the
+system.
+\end{itemize}
+
+\section*{Kernel Modules}
+\begin{itemize}
+\item \code{insmod} - inserts modules into the system.
+\end{itemize}
+
+\section*{File System}
+\begin{itemize}
+\item Equivalent system calls to the user-space function calls.
+\item \code{open} is system; \code{fopen} in the user-space.
+\item \code{mode} is the permissions for the file.
+\item \code{fopen} does not set the permission explicitly (i.e., there is no
+parameter that needs to be set.
+\item \code{fopen} is system dependent. It is not a system call, it's a cross-
+platform library.
+\item \code{mode} is a very unix-specific method to control file permissions.
+\item \code{O\_EXCL} with \code{O\_CREAT} means ``please create this file and
+only create this file if this file is not there.''
+\item Guarantees mutual exclusion to a given file.
+\end{itemize}
+
+\end{document}
