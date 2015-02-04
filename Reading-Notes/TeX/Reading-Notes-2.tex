@@ -1,5 +1,4 @@
-\documentclass[]{article}
-\usepackage[all]{xy}
+\documentclass[]{article} \usepackage[all]{xy}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
@@ -516,7 +515,7 @@ kernel).
 \subsubsection*{File Sharing}
 \begin{itemize}
 \item One characteristic of \code{fork} is that al file descriptors that are
-open in teh parent are duplicated in the child.
+open in the parent are duplicated in the child.
 \item It is important that the parent and the child share the same file offset.
 \item If both parent and child write to the same descriptor, without any form of
 synchronization, their output will be intermixed.
@@ -553,13 +552,12 @@ inherited by the child:
 \item The two main reasons for \code{fork} to fail are
 \begin{enumerate}
 \item if too many processes are already in the system
-\item if the total number of processes for this real user ID excees the system's
+\item if the total number of processes for this real user ID exceeds the system's
 limit
 \end{enumerate}
 \item When a process wants to duplicate itself so that the parent and the child
 can each execute different sections of code at the same time.
 \item When a process wants to execute a different program.
-\end{enumerate}
 \item A \code{fork} followed by an \code{exec} is called a \emph{spawn}.
 \end{itemize}
 
@@ -604,13 +602,144 @@ it called a \emph{zombie}.
 \end{itemize}
 
 \subsection*{8.6 \code{wait} and \code{waitpid} Functions}
+\begin{itemize}
+\item When a process terminates, the kernel notifies the parent by sending the
+\code{SIGCHLD} signal to the parent.
+\item The parent can ignore this signal, or it can provide a function that is
+called when the signal occurs: a signal handler.
+\end{itemize}
+
+\code{\#include <sys/wait.h>}
+
+\code{pid\_t wait(int *\emph{statloc});}
+
+\code{pid\_t waitpid(pid\_t \emph{pid}, int *\emph{statloc}, int
+\emph{options});}
+
+Both return: process ID if OK, 0, or -1 on error.
+
+\begin{itemize}
+\item The \code{wait} function can block the caller until a child process
+terminates; \code{waitpid} has an option that prevents it from blocking.
+\item The \code{waitpid} function doesn't wait for the child that terminates
+first; it has a number of options that control which process it waits for.
+\item If the caller blocks and has multiple children, \code{wait} returns when
+one terminates.
+\item The argument \emph{statlo} is a pointer to an integer.
+\item The \code{waitpid} function provides three features that aren't provided
+by the \code{wait} function:
+\begin{enumerate}
+\item The \code{waitpid} function lets us wait for one particular process.
+\item The \code{waitpid} function provides a nonblocking version of \code{wait}.
+\item The \code{waitpid} function provides support for job control with the
+\code{WUNTRACED} and \code{WCONTINUED} options.
+\end{enumerate}
+\end{itemize}
 
 \subsection*{8.7 \code{waitid} Function}
+\code{\#include <sys/wait.h>}
+
+\code{int waitid(idtype\_t \emph{idtype}, id\_t \emph{id}, siginfo\_t
+*\emph{infop}, int \emph{options});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item \code{waitid} allows a process to specify which children to wait for.
+\item The \emph{id} parameter is interpreted based on teh value of
+\emph{idtype}.
+\item The \emph{options} argument is bitwise OR of the flags that are used to
+indicate which state changes the caller is interested in.
+\item The \emph{infop} argument is a pointer to a \code{siginfo} structure,
+which contains detailed information about the signal generated that caused the
+state change in the child process.
+\end{itemize}
 
 \subsection*{8.8 \code{wait3} and \code{wait4} Functions}
+\code{\#include <sys/types.h>}
+\code{\#include <sys/wait.h>}
+\code{\#include <sys/time.h>}
+\code{\#include <sys/resource.h>}
+
+\code{pid\_t wait3(int *\emph{statloc}, int \emph{options}, struct rusage
+*\emph{rusage});}
+
+\code{pid\_t wait4(pid\_t \emph{pid}, int *\emph{statloc}, int \emph{options},
+struct rusage *\emph{rusage});}
+
+Both return: process ID if OK, 0, or -1 on error.
+
+\begin{itemize}
+\item The only feature provided by these two functions that isn't provided by
+the \code{wait}, \code{waitid}, and \code{waitpid} functions is an additional
+argument that allows the kernel to return a summary of the resources used by the
+terminated process and all its child processes.
+\item Resource information includes such statistics as the amount of user CPU
+time, amount of system CPU time, number of page faults, number of signals
+received, etc.
+\end{itemize}
 
 \subsection*{8.9 Race Conditions}
+\begin{itemize}
+\item A race condition occurs when multiple processes are trying to do somethign
+with shared data and the final outcome depends on the order in which the
+processes run.
+\item \emph{Polling} wastes CPU time because the caller is awakened every second
+to test the conditions.
+\item It is necessary to have processes wait for other processes to complete and
+to have processes who complete to alert waiting processes.
+\end{itemize}
 
 \subsection*{8.10 \code{exec} Functions}
+\begin{itemize}
+\item When a process calls one of the \code{exec} functions, that process is
+completely replaced by the new program, and the new program starts executing at
+its \code{main} function.
+\item When a \emph{filename} argument is specified,
+\begin{itemize}
+\item If \emph{filename} contains a slash, it is taken as a pathname.
+\item Otherwise, the executable file is searched for in the directories
+specified by the \code{PATH} environment variable.
+\end{itemize}
+\item The \code{PATH} variable contains a list of directories, called path
+prefixes, that are separated by colons.
+\item If either \code{execlp} or \code{execvp} finds an executable file using a
+path prefix, but the file isn't machine executable, the function assumes that
+the file is a shell script and tries to invoke \code{/bin/bsh} with the
+\emph{filename} as input to the shell.
+\item \code{l} stands for list and \code{v} stands for vector. Certain
+\code{exec} functions require each of the command-line arguments to the new
+program to be specified as separate arguments. Others require that we build an
+array of pointers to the arguments, and the address of this array is the
+argument to these functions.
+\item The list \code{exec} functions require the arguments given to end with a
+null pointer.
+\item The letter \code{p} means that the function takes a \emph{filename}
+argument and uses the \code{PATH} environment variable to find the executable
+file.
+\item \code{e} means that the function takes an \emph{envp\lbrack\rbrack} array
+instead of using the current environment.
+\item THe new program after an \code{exec} inherits additional properties from
+the calling process:
+\begin{itemize}
+\item Process ID and parent process ID
+\item Real user ID and real group ID
+\item Supplementary group IDs
+\item Process group ID
+\item Session ID
+\item Controlling terminal
+\item Time left until alarm clock
+\item Current working directory
+\item Root directory
+\item File mode creation mask
+\item File locks
+\item Process signal mask
+\item Pending signals
+\item Resource limits
+\item Nice value
+\item Values for \code{tms\_utime}, \code{tms\_stime}, \code{tms\_cutime}, and
+\code{tms\_cstime}
+\end{itemize}
+\end{itemize}
 
 \end{document}
