@@ -1,0 +1,136 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\newcommand{\code}{\texttt}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Reading Notes 3}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 04}
+\maketitle
+
+\section*{Advanced Programming in the UNIX Environment \\
+Chapter 7: Process Environment}
+\subsection*{7.6 Memory Lay out of a C Program}
+\begin{itemize}
+\item A C program has been composed of the following pieces:
+\begin{itemize}
+\item Text segment, consisting of the machine instructions that the CPU
+executes.
+\item Initialized data segment, usually called simply the data segment,
+containing variables that are specifically initialized in the program.
+\item Uninitialized data segment, often called the ``bss'' segment, named after
+an ancient assembler operator that stood for ``block started by symbol.''
+\item Stack, where automatic variables are stored, along with information that
+is saved each time a function is called.
+\item Heap, where dynamic memory allocation usually takes place.
+\end{itemize}
+\item The only portions of the program that need to be saved in the program file
+are the text segment and the initialized data.
+\end{itemize}
+
+\subsection*{7.7 Shared Libraries}
+\begin{itemize}
+\item Shared libraries remove the common library routines from the executable
+file, instead maintaining a single copy of the library routine somewhere in
+memory that all processes reference.
+\item Shared libraries reduce the size of each executable file, but add some
+runtime overhead.
+\item Library functions can be replaced with new verions without having to
+relink edit every program.
+\end{itemize}
+
+\subsection*{7.8 Memory Allocation}
+\begin{itemize}
+\item There are three functions for memory allocation:
+\begin{itemize}
+\item \code{malloc}, which allocates a specified number of bytes of memory.
+\item \code{calloc}, which allocates space for a specified number of objects of
+a specified size.
+\item \code{realloc}, which increases or decreases the size of a previously
+allocated area.
+\end{itemize}
+\end{itemize}
+
+\code{\#include <stdlib.h>}
+
+\code{void *malloc(size\_t \emph{size});}
+
+\code{void *calloc(size\_t \emph{nobj}, size\_t \emph{size});}
+
+\code{void *realloc(void *\emph{ptr}, size\_t \emph{newsize});}
+
+All three return: non-null pointer if OK, \code{NULL} on error \\
+
+\code{void free(void *\emph{ptr});}
+
+\begin{itemize}
+\item The pointer returned by the three allocation functions is guaranteed to be
+suitably aligned so that it can be used for any data object.
+\item The function \code{free} causes the space pointed to by \emph{ptr} to be
+deallocated.
+\item The allocation routeins are usually implemented with the \code{sbrk(2)}
+system call. This system call expands (or contracts) the heap of the process.
+\item Most verions of \code{malloc} and \code{free} never decrease their memory
+size. Freed space is kept in the \code{malloc} pool.
+\item Most implementations allocate more space than requested and use the
+additional space for record keeping -- the size of the block, a pointer to the
+next allocated block, and the like.
+\end{itemize}
+
+\section*{Advanced Programming in the UNIX Environment \\
+Chapter 14: Advacned I/O}
+\subsection*{14.8 Memory-Mapped I/O}
+
+
+\section*{Advanced Programming in the UNIX Environment \\
+Chapter 15: Interprocess Communication}
+\subsection*{15.2 Pipes}
+\begin{itemize}
+\item Pipes have two limitations:
+\begin{enumerate}
+\item Historically, they have been half duplex
+\item Pipes can be used only between processes that have a common ancestor.
+\end{enumerate}
+\item The shell creates a separate process for each command and links the
+standard output of one process to the standard input of the next using a pipe.
+\end{itemize}
+
+\code{\#include <unistd.h>}
+
+\code{int pipe(int \emph{fd\lbrack 2 \rbrack});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item Two file descriptors are returned through the \emph{fd} argument:
+\begin{description}
+\item[fd\lbrack 0 \rbrack] opened for reading
+\item[fd\lbrack 1 \rbrack] opened for writing.
+\end{description}
+\item  When one end of a pipe is closed, two rules apply.
+\begin{enumerate}
+\item If we \code{read} from a pipe whose write end has been closed, \code{read}
+returns 0 to indicate an end of file after all teh data has been read.
+\item If we \code{write} to a pipe whose read end has been closed, the signal
+\code{SIGPIPE} is generated.
+\end{enumerate}
+\item When we're writing to a pipe, the constant \code{PIPE\_BUF} specifies the
+kernel's pipe buffer size.
+\end{itemize}
+
+\subsection*{15.9 Shared Memory}
+
+\subsection*{15.10 POSIX Semaphores}
+
+\end{document}
