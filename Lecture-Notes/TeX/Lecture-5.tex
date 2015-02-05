@@ -1,0 +1,136 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\newcommand{\code}{\texttt}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 5}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 05}
+\maketitle
+
+\section{System Calls}
+\subsection{\code{lseek}}
+\begin{itemize}
+\item Deals with file descriptors, give offset, \emph{whence} controls how to
+interpret the offset.
+\item Three offset markers \code{SEEK\_SET}, \code{SEEK\_CUR}, and
+\code{SEEK\_END}.
+\end{itemize}
+
+\subsection{\code{read}}
+\begin{itemize}
+\item Reads in a file from a buffer using the file descriptor.
+\item There is no end of file byte within a file, the file is just straight
+content.
+\item End Of File is a condition, which points to one past the last byte in the
+file.
+\item When you call \code{read}, the number of bytes read may be less than the
+requested number of bytes.
+\item This is mainly due to the size of the file.
+\item There is a notion of ``slow system call.'' That is, a system call where it
+is possible for the system to block forever.
+\item Reading from a disk is not a ``slow system call'', it will take a long
+time though.
+\item Reading from a keyboard device is an example of a slow system call. It is
+waiting for input from a user.
+\item \code{read} call is waiting for input from anything, whether it be another
+driver or a keyboard.
+\item \code{read} listening on file descriptor 0 is listening for input from the
+keyboard.
+\item \code{pipes} also behave like files. Thus, the incoming input from one
+program may never happen, which would cause the second program to block forever.
+\item \code{FIFO} are just named pipes, so they behave like \code{pipe}s.
+\item For \code{sockets}, we use \code{recv} as it is socket-specific; however,
+we can use an equivalent version of \code{read} for it as well.
+\item In UNIX, everything is a file. There is a uniform interface of reading and
+writing.
+\end{itemize}
+
+\subsection{\code{write}}
+\begin{itemize}
+\item Again returns the number of bytes written to a file, it can be less than
+the specified size.
+\item Returns -1 on error, otherwise it returns the number of bytes written to
+the file.
+\item \code{write()} can be slow as well.
+\item \code{pipe} involves coordination between the two processes to write into
+the \code{pipe} and read from the \code{pipe}.
+\item \code{write} in socket is equivalent to \code{send} for sockets.
+\item With the \code{O\_APPEND} flag declared, all \code{write}s will
+automatically go to the end of the file.
+\item \emph{Atomic} operations are operations that cannot be broken apart; they
+must happen together or they won't happen at all.
+\item Setting the offset and writing to the file happen in an atomic operation
+together.
+\item It's very difficult to ensure consistency across a Network-File-System. We
+say it may be atomic, but there are scenarios where the operation is not atomic.
+\end{itemize}
+
+\section{Signals and System Calls Revisted}
+\begin{itemize}
+\item When you block on a slow system call, a signal will interrupt the system
+call and return the system call with an error.
+\item Once you catch a signal, it gets reset to the default value. The signal
+disposition gets reset to its initial value.
+\item This only occurs on slow system calls.
+\item When we have a signal that needs to be reset by a signal handler, we have
+an issue where there in a brief time where the signal can happen without the
+desired functionality.
+\item Signal handlers cannot call reentrant functions.
+\item When a signal handler gets called, you must use reentrant functions.
+\item Non-reentrant functions are functions where in the middle of the function
+you cannot stop and have another thread of your program call that function.
+\item Because signal is asynchronous, execution is stopped when signal
+interrupts.
+\item If a function cannot be re-entered in the after an interrupt has occured,
+then you cannot use it in a signal interrupt.
+\item From a signal handler, call only \emph{async-signal-safe} functions.
+\end{itemize}
+
+\section{File Sharing}
+\begin{itemize}
+\item In order to understand interprocess code, you need to understand
+\code{pipe}, in order to understand \code{pipe}, you need to understand file
+descriptors.
+\item The kernel maintains a process table entry for every process within the
+system.
+\item There is a file descriptor table, and pointers to files.
+\item The pointers point to file table entries.
+\item These table entries contain file status flags, current file offset, and
+v-node pointer.
+\item You can duplicate a file descriptor from another file descriptor using
+\code{dup(1)}.
+\item \code{v-node} and \code{i-node} are essentially the same thing.
+\item When you \code{fork}, each file descriptor entry gets duplicated into the
+child process.
+\item Child processes share the same offset for a file, so they will not
+overwrite each other. They can interleave each other, but they will not
+overwrite their data.
+\item The process table entries remain the same and are controlled by the
+kernel, not the user-space.
+\item Signal handlers are lost when you \code{exec} as the program is not the
+same memory space.
+\end{itemize}
+
+\section{\code{pipe}}
+\begin{itemize}
+\item Creates two file descriptors, one that reads from the pipe and the other
+that writes to the pipe.
+\item By linking the \code{pipe} to the same process, we can then fork and have
+a connection between the parent and the child process.
+\item We can then close the read end of the parent and the write end of the
+child to create a half-duplex channel from the parent to the child.
+\end{itemize}
+
+\end{document}
