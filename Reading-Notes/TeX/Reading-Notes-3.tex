@@ -19,8 +19,7 @@
 \date{2015 -- 02 -- 04}
 \maketitle
 
-\section*{Advanced Programming in the UNIX Environment \\
-Chapter 7: Process Environment}
+\section*{Advanced Programming in the Unix Environment \\Chapter 7: Process Environment}
 \subsection*{7.6 Memory Lay out of a C Program}
 \begin{itemize}
 \item A C program has been composed of the following pieces:
@@ -46,7 +45,7 @@ file, instead maintaining a single copy of the library routine somewhere in
 memory that all processes reference.
 \item Shared libraries reduce the size of each executable file, but add some
 runtime overhead.
-\item Library functions can be replaced with new verions without having to
+\item Library functions can be replaced with new versions without having to
 relink edit every program.
 \end{itemize}
 
@@ -79,16 +78,16 @@ All three return: non-null pointer if OK, \code{NULL} on error \\
 suitably aligned so that it can be used for any data object.
 \item The function \code{free} causes the space pointed to by \emph{ptr} to be
 deallocated.
-\item The allocation routeins are usually implemented with the \code{sbrk(2)}
+\item The allocation routines are usually implemented with the \code{sbrk(2)}
 system call. This system call expands (or contracts) the heap of the process.
-\item Most verions of \code{malloc} and \code{free} never decrease their memory
+\item Most versions of \code{malloc} and \code{free} never decrease their memory
 size. Freed space is kept in the \code{malloc} pool.
 \item Most implementations allocate more space than requested and use the
 additional space for record keeping -- the size of the block, a pointer to the
 next allocated block, and the like.
 \end{itemize}
 
-\section*{Advanced Programming in the UNIX Environment \\
+\section*{Advanced Programming in the Unix Environment \\
 Chapter 14: Advacned I/O}
 \subsection*{14.8 Memory-Mapped I/O}
 \begin{itemize}
@@ -114,16 +113,16 @@ to be mapped.
 \item The \emph{prot} argument specifies the protection of the mapped region.
 \item Each implementation has additional \code{MAP\_xxx} flag values, which are
 specific to that implementation.
-\item The \code{SIGSEGV} signla is normally used to indicate that we tried to
+\item The \code{SIGSEGV} signal is normally used to indicate that we tried to
 access memory that is not available to us, such as read-only memory.
 \item The \code{SIGBUS} signal can be generated if we access a portion of the
 mapped region that does not make sense at the time of the access.
-\itme A memory-mapped region is inherited by a chile across a \code{fork} but it
+\item A memory-mapped region is inherited by a chile across a \code{fork} but it
 is not inherited by the new program across an \code{exec}.
 \end{itemize}
 
 
-\section*{Advanced Programming in the UNIX Environment \\
+\section*{Advanced Programming in the Unix Environment \\
 Chapter 15: Interprocess Communication}
 \subsection*{15.2 Pipes}
 \begin{itemize}
@@ -176,11 +175,11 @@ mode\_t \emph{mode}, unsigned int \emph{value} */);}
 Returns: Pointer to semaphore if OK, \code{SEM\_FAILED} on error
 
 \begin{itemize}
-\item When useing an existing named semaphore, we specify only two arguemnts:
+\item When using an existing named semaphore, we specify only two arguments:
 the name of the semaphore and a zero value for the \emph{oflag} argument.
 \item When we specify the \code{O\_CREAT} flag, we need to provide two
 additional arguments. The \emph{mode} argument specifies who can access the
-semaphore. The \emph{value} arguemnt is used to specify the initial value for
+semaphore. The \emph{value} argument is used to specify the initial value for
 the semaphore when we create it.
 \item To promote portability, we must follow certain conventions when selecting
 a semaphore name.
@@ -239,6 +238,56 @@ Returns: 0 if OK, -1 on error
 \begin{itemize}
 \item The \emph{tsptr} arugment specifies the absolute time when we want to give
 up waiting for the semaphore.
+\item To increment the value of a semaphore, we call the \code{sem\_post}
+function.
+\end{itemize}
+
+\code{\#include <semaphore.h>}
+
+\code{int sem\_post(sem\_t *\emph{sem});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item To create an unnamed semaphore, we call the \code{sem\_init} function.
+\end{itemize}
+
+\code{\#include <semaphore.h>}
+
+\code{int sem\_init(sem\_t *\emph{sem}, int \emph{pshared}, usigned int
+\emph{value});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item The \emph{pshared} argument indicates if we plan to use the semaphore with
+multiple processes.
+\item The \emph{value} argument specifies the initial value of the semaphore.
+\item When we are done using the unnamed semaphore, we can discard it by calling
+the \code{sem\_destory} function.
+\end{itemize}
+
+\code{\#include <semaphore.h>}
+
+\code{int sem\_destroy(sem\_t *\emph{sem});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item We call the \code{sem\_getvalue} function to retrieve the value of a
+semaphore.
+\end{itemize}
+
+\code{\#include <semaphore.h>}
+
+\code{int sem\_getvalue(sem\_t *restrict \emph{sem}, int *restrict
+\emph{valp});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item On success, the integer pointed to by the \emph{valp} argument will
+contain the value of the semaphore.
 \end{itemize}
 
 \end{document}
