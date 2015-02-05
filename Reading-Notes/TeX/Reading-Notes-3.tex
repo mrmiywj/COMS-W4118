@@ -91,6 +91,36 @@ next allocated block, and the like.
 \section*{Advanced Programming in the UNIX Environment \\
 Chapter 14: Advacned I/O}
 \subsection*{14.8 Memory-Mapped I/O}
+\begin{itemize}
+\item Memory-mapped I/O lets us map a file on disk into a buffer in memory so
+that, when we fetch bytes from the buffer, the corresponding bytes of the file
+are read.
+\end{itemize}
+
+\code{\#include <sys/mman.h>}
+
+\code{void *mmap(void *\emph{addr}, size\_t \emph{len}, int \emph{prot}, int
+\emph{flag}, int \emph{fd}, off\_t \emph{off});}
+
+Returns: starting address of mapped region if OK, \code{MAP\_FAILED} on error.
+
+\begin{itemize}
+\item The \emph{addr} arguments lets us specify the address where we want the
+mapped region to start.
+\item The \emph{fd} argument is the file descriptor specifying the file that is
+to be mapped.
+\item The \emph{len} argument  is the number of bytes to map.
+\item The \emph{off} is the starting offset in the file of the bytes to map.
+\item The \emph{prot} argument specifies the protection of the mapped region.
+\item Each implementation has additional \code{MAP\_xxx} flag values, which are
+specific to that implementation.
+\item The \code{SIGSEGV} signla is normally used to indicate that we tried to
+access memory that is not available to us, such as read-only memory.
+\item The \code{SIGBUS} signal can be generated if we access a portion of the
+mapped region that does not make sense at the time of the access.
+\itme A memory-mapped region is inherited by a chile across a \code{fork} but it
+is not inherited by the new program across an \code{exec}.
+\end{itemize}
 
 
 \section*{Advanced Programming in the UNIX Environment \\
@@ -129,8 +159,86 @@ returns 0 to indicate an end of file after all teh data has been read.
 kernel's pipe buffer size.
 \end{itemize}
 
-\subsection*{15.9 Shared Memory}
-
 \subsection*{15.10 POSIX Semaphores}
+\begin{itemize}
+\item Semaphores are useful tool in the prevention of race conditions.
+\item Semaphores are records of how many units of a particular resource are
+available, coupled with operations to \emph{safely} adjust that record as units
+are required or become free, and, if necessary, wait until a unit of the
+resource becomes available.
+\end{itemize}
+
+\code{\#include <semaphore.h>}
+
+\code{sem\_t *sem\_open(const char *\emph{name}, int \emph{oflag}, \ldots\, /*
+mode\_t \emph{mode}, unsigned int \emph{value} */);}
+
+Returns: Pointer to semaphore if OK, \code{SEM\_FAILED} on error
+
+\begin{itemize}
+\item When useing an existing named semaphore, we specify only two arguemnts:
+the name of the semaphore and a zero value for the \emph{oflag} argument.
+\item When we specify the \code{O\_CREAT} flag, we need to provide two
+additional arguments. The \emph{mode} argument specifies who can access the
+semaphore. The \emph{value} arguemnt is used to specify the initial value for
+the semaphore when we create it.
+\item To promote portability, we must follow certain conventions when selecting
+a semaphore name.
+\begin{itemize}
+\item The first character in the name should be a slash (\code{/}).
+\item The name should contain no other slashes to avoid implementation-defined
+behavior.
+\item The maximum length of the semaphore name is implementation defined.
+\end{itemize}
+\item The \code{sem\_open} function returns a semaphore pointer that we can pass
+to other semaphore functions when we operate on the semaphore.
+\end{itemize}
+
+\code{\#include <semaphore.h>}
+
+\code{int sem\_close(sem\_t *\emph{sem});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item If our process exits without having first called \code{sem\_close}, the
+kernel will close any open semaphores automatically.
+\end{itemize}
+
+\code{\#include <semaphore.h>}
+
+\code{int sem\_unlink(const char *\emph{name});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item The \code{sem\_unlink} function removes the name of the semaphore. If
+there are no open references to the semaphore, then it is destroyed.
+\end{itemize}
+
+\code{\#include <semaphore.h>}
+
+\code{int sem\_trywait(sem\_t *\emph{sem});}
+
+\code{int sem\_wait(sem\_t *\emph{sem});}
+
+Both return: 0 if OK, -1 on error
+
+\begin{itemize}
+\item The \code{sem\_wait} function will block if the semaphore count is 0.
+\end{itemize}
+
+\code{\#include <semaphore.h>}
+\code{\#include <time.h>}
+
+\code{int sem\_timedwait(sem\_t *restrict \emph{sem}, const struct timespec
+*restrict \emph{tsptr});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item The \emph{tsptr} arugment specifies the absolute time when we want to give
+up waiting for the semaphore.
+\end{itemize}
 
 \end{document}
