@@ -1,0 +1,120 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 6}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 10}
+\maketitle
+
+\section{General Overiew}
+\begin{itemize}
+\item Mechanisms for two different processes to communicate (Interprocess
+communication).
+\end{itemize}
+
+\section{File Sharing}
+\begin{itemize}
+\item You can have two file descriptors share a file by calling \code{dup(1)}.
+\item When a parent process forks and create a child process, all the file
+descriptors from the parent process get \code{dup}ed into the child's file
+descriptor table.
+\end{itemize}
+
+\section{Pipes}
+\begin{itemize}
+\item \code{pipe} is a system call and you pass an array of two integers to it.
+\item Arguments are \code{int *fd}.
+\item When called, the kernel will create a data structure called a \code{pipe},
+that will connect to the two file descriptors together.
+\item \code{fd\lbrack 1 \rbrack} will be the writing end of the pipe.
+\item \code{fd\lbrack 0 \rbrack} will be the reading end of the pipe.
+\item The file descriptor numbers will not be 0 or 1. They will be whatever was
+available next.
+\item After you call \code{pipe}, you immediately \code{fork} to copy the
+descriptors into a child process.
+\item This is a half-duplex connection.
+\item Whichever file descriptor reads first, then the data will be removed from
+the pipe.
+\item You must determine what kind of commuincation you desire.
+\item \code{STDIN\_FILENO} is 1.
+\item \code{dup(2)} copies a file descriptor into another given file descriptor.
+\item When useing \code{dup(2)} check that the descriptor you want to copy over
+another value, you will want to check that the descriptor is not the same
+number.
+\item \code{NULL} is sent when there is only one file descriptor open.
+\item Write a program that is modeled like the example, but takes another
+program name, have it run, and have the output fed into the pager.
+\item \code{pipe} is the oldest and simplest interprocess method; however, it is
+one way and only related processes can use it.
+\end{itemize}
+
+\section{Other Interprocess Systems}
+\begin{itemize}
+\item There are three other ways to control interprocess communication.
+\begin{enumerate}
+\item Message queues
+\item Semaphores
+\item Shared memory
+\end{enumerate}
+\item All are terribly implemented.
+\item Hard to clean-up because there is no reference counting.
+\item POSIX refers to the modern Linux standard.
+\end{itemize}
+
+\subsection{Shared Memory}
+\begin{itemize}
+\item Gives you the ability to share a piece of memory (like an array) between
+two processes.
+\end{itemize}
+
+\subsection{Message Queue}
+\begin{itemize}
+\item Like Socket, handles communications between processes.
+\item Use single-domain-host sockets instead of message queues as they are
+easier to use.
+\end{itemize}
+
+\subsection{Semaphores}
+\begin{itemize}
+\item Synchronize actions across processes
+\end{itemize}
+
+\section{Memory Mapping}
+\begin{itemize}
+\item When you compile a program into an executable, it uses a shared object
+that controls the standard library.
+\item A static link is a \code{.o} file.
+\item A dynamic link holds a link to some larger library to load the code in at
+run time.
+\item The advantage is that you have one copy of standard library on your
+system. and all programs will load the necessary parts at run time.
+\item This is done by memory-mapping.
+\item Used for writing and reading to file and also for executing code.
+\item You call \code{mmap} when you want the starting address of a mapped
+region.
+\begin{description}
+\item[addr] Usually pass \code{NULL}, the specific area of the memory.
+\item[len] Length of the memory
+\item[fd] File descriptor on where to map.
+\item[offset] The offset of the file.
+\end{description}
+\item If you want to zero out a file, you read from \code{/dev/zero}.
+\item You use \code{mmap} to create a shared reason by mapping \code{/dev/zero/}
+to it to zero out the region.
+\item \code{mmap} can be used for unrelated tasks as long as there is a file underneath.
+\end{itemize}
+
+\end{document}
