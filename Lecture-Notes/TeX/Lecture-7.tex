@@ -1,0 +1,127 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 7}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 12}
+\maketitle
+
+\section{Homework}
+\begin{itemize}
+\item Build http server. Has 5 parts.
+\item Understand the mechanics and understand why they work.
+\end{itemize}
+
+\subsection{Part 0 Basic Single-Process/Single-Threaded Web Server}
+\begin{itemize}
+\item Same HTTP server from AP
+\item Only serves one user at a time
+\item Read through the code and understand everything
+\end{itemize}
+
+\section{POSIX Semaphores}
+\begin{itemize}
+\item Designed so shared processes don't interfere with each other and avoids a
+race condition.
+\item The keyword \code{synchronized} in Java causes the method to run
+atomically. No other method running on a thread can occur during this method's
+call.
+\item When this method is called, the hidden \code{lock} on a Java object will
+be set. On exit, the \code{lock} will be unset.
+\item This is a version of mutual exclusion between locking methods.
+\item A \code{semaphore} is similar to a lock, except you can lock multiple
+times.
+\item Semaphore is initialized with a number, such as 4.
+\item Different processes can decrement the number.
+\item \code{sem\_post} means that the process is done and increment the number
+of the semaphore.
+\item \code{sem\_wait} means that the process is entering the semaphore and that
+the number of the semaphore should be decremented.
+\item A binary semaphore is equivalent to a \code{mutex} lock. Only one process
+can hold onto the semaphore now.
+\item Locking with a semaphore is a completely voluntary process. There is
+nothing that will necessary stop another process from entering the pool unless
+it calls \code{sem\_wait}.
+\item There is no requirement that the process that grabbed the semaphore number
+has to call \code{sem\_post}. Any process can do that.
+\item \code{mutex} forces that there is a mutual exclusions between processes.
+So if one process locks a part of the program, it must be the process to unlock
+that part.
+\item There are two kinds of semaphores:
+\begin{enumerate}
+\item Named semaphores - Can be used between unrelated processes.
+\item Unnamed semaphores - Semaphore lives on a mapped area of shared memory.
+\end{enumerate}
+\item Typical convention for the name of a semaphore is a slash followed by
+something relted to the process.
+\item The named semaphore function \code{sem\_open} returns a pointer to the
+semaphore.
+\item Flag value lets the system know if you are creating the semaphore or
+opening an existing one.
+\item Semaphores are not deallocated until you call \code{sem\_unlink}.
+\item Often times, you create a temporary file while the program is running,
+when you finish the task, you remove the temp file.
+\item To delete this file, you open it and get a file descriptor of it, then you
+immediately call link.
+\item Once a file loses all of its links, then the file will be removed.
+\item The semaphore API looks like the file API because it is backed up by a
+file.
+\end{itemize}
+
+\section{Signals}
+\begin{itemize}
+\item One of the most complicated topics in a UNIX system.
+\item Concurrency is the main concept behind operating systems.
+\item Asynchronous calls are the worst part of concurrency.
+\end{itemize}
+
+\subsection{Process Groups, Sessions, Controlling Terminal}
+\begin{itemize}
+\item Controlling terminal is the terminal program that started the session.
+\item A single process, the session leader, interacts with the controlling
+terminal in order to ensure that all programs are terminated when a user ``hangs
+up'' the terminal connection.
+\end{itemize}
+
+\subsection{Sending Signals}
+\begin{itemize}
+\item \code{kill} command delivers a signal into a process ID.
+\item \code{raise} is the same thing as \code{kill} but it commits suicide.
+\item \code{raise} is a simple wrapper on top of the \code{kill} function.
+\item \code{pid} is not part of C; it is UNIX-specific.
+\end{itemize}
+
+\section{SIGALRM}
+\subsection{alarm() and pause() functions}
+\begin{itemize}
+\item Set up a signal handler for \code{SIGALRM}, give it a time, and run it.
+\item Programs will block at \code{pause()} command.
+\item This is a good way to implement \code{sleep}. Create an alarm signal
+handler and set pause.When the timer runs out, alarm will be called and break
+out the program.
+\item You always call \code{alarm(0)} to cancel an alarm.
+\end{itemize}
+
+\subsection{Using setjmp \& longjmp to solve the two problems}
+\begin{itemize}
+\item Part of the standard C language
+\item Across function goto statements
+\item \code{setjmp} on the first call will return 0, on the next call it will
+return whatever value you gave to \code{longjmp}.
+\item It's not easy to deal with race conditions.
+\end{itemize}
+
+\end{document}
