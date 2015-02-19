@@ -1,0 +1,215 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Reading Notes 4}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 19}
+\maketitle
+
+\section*{Advanced Programming in the Unix Environment \\
+Chapter 9: Process Relationships}
+\subsection*{9.4 Process Groups}
+\begin{itemize}
+\item A process group is a collection of one or more processes, usually
+associated with the same job, that can receive signals from the same terminal.
+\item Each process group has a unique process group ID.
+\item The function \code{getpgrp} returns the process group ID of the calling
+process.
+\end{itemize}
+
+\code{\#include <unistd.h>}
+
+\code{pid\_t getpgrp(void);}
+
+Returns: process group ID of calling process.\\
+
+\code{\#include <unistd.h>}
+
+\code{pid\_t getpgid(pid\_t \emph{pid});}
+
+Returns: process group ID if OK, -1 on error.
+
+\begin{itemize}
+\item Each process group can have a process group leader. The leader is
+identified by its process group ID being equal to its process ID.
+\item The process group lifetime is the period of time that begins when a group
+is created and ends when the last remaining process leaves the group.
+\item A process joins an existing process group or creates a new process group
+by calling \code{setpgid}.
+\end{itemize}
+
+\code{\#include <unistd.h>}
+
+\code{int setpgid(pid\_t \emph{pid}, pid\_t \emph{pgid});}
+
+Returns: 0 if OK, -1 on error.
+
+\begin{itemize}
+\item Sets the process group ID to \emph{pgid} in the process whose process ID
+equals \emph{pid}.
+\item If the two arguments are equal, the process specified becomes a process
+group leader.
+\item A process can set the process group ID of only itself or any of its
+children.
+\item This function is often called after a \code{fork} by the parent process to
+set the child's process group ID and by the child to set it's own child group
+ID. We have the redundancy to avoid any race conditions.
+\end{itemize}
+
+\subsection*{9.5 Sessions}
+\begin{itemize}
+\item A session is a collection of one or more process groups.
+\item The processes in a process group are usually placed into their respective
+process group by a shell pipeline.
+\item A process establishes a new session by calling the \code{setsid} function.
+\end{itemize}
+
+\code{\#include <unistd.h>}
+
+\code{pid\_t setsid(void);}
+
+Returns: process group ID if OK, -1 on error
+
+\begin{itemize}
+\item If the calling process is not a process group leader, this function
+creates a new session.
+\item Three things happen afterwards:
+\begin{enumerate}
+\item The process becomes the \emph{session leader} and is the only process in
+this new session. A session leader is the process that creates a session.
+\item The process becomes the process group leader of a new procress group; the
+process ID of the calling process is the process group ID.
+\item The process has no controlling terminal.
+\end{enumerate}
+\item This function returns an error if the caller is already a process group
+leader.
+\item The \code{getsid} function returns the process group ID of a process's
+session leader.
+\item The session leader is always the leader of a process group.
+\end{itemize}
+
+\code{\#include <unistd.h>}
+
+\code{pid\_t getsid(pid\_t \emph{pid});}
+
+Returns: session leader's process group ID if OK, -1 on error
+
+\subsection*{9.6 Controlling Terminal}
+\begin{itemize}
+\item A session can have a single \emph{controlling terminal}, which is usually
+the terminal device or pseudo terminal device on which we log in.
+\item The session leader that establishes the connection to the controlling
+terminal is called the \emph{controlling process}.
+\item The proces groups within a session can be divided into a single
+\emph{foreground process group} and one or more \emph{background process
+groups}.
+\item If a session has a controlling terminal, it has a single foreground proces
+group and all other process groups in the session are background process groups.
+\item Whenever we press the terminal's interrupt key, the interrupt signal is
+sent to all processes in the foreground process group.
+\item Whenever we press the terminal's quit key, the quit signal is sent to all
+processes in the foreground process group.
+\item If a modem disconnect is detected by the terminal interface, the hang-up
+signal is sent to the controlling process (session leader).
+\item A program guarantees it is talking ot the controlling terminal when it
+opens the file \code{/dev/tty}. This special file is synonomous within the
+kernel for the controlling terminal.
+\end{itemize}
+
+\section*{Chapter 10: Signals}
+\subsection*{10.8 Reliable-Signal Terminology and Semantics}
+\begin{itemize}
+\item A signal is \emph{generate} for a process when the event that causes the
+signal occurs. The event could be a hardware exception, a software condition, or
+anything else.
+\item A signal is \emph{delivered} to a process when the action for a signal is
+taken.
+\item During the time between the generation of a signal and its delivery, the
+signal is said to be \emph{pending}.
+\item A process has the option of \emph{blocking} the delivery of a signal.
+\item If a signal that is blocked is generated for a process, and if the action
+for that signal is either the default action or to catch the signal, then the
+signal remains pending for the process until the process either unblocks the
+signal or changes the action to ignore the signal.
+\item If the system delivers the signal more than once, we say that the signals
+are queued.
+\item Most UNIX systems do not queue signals. The kernel simply delivers the
+signal once.
+\item POSIX.1 does not specify the order in which the signals are delivered to
+the process. Signals related to the current state of the process should be
+delivered before other signals.
+\item Each process has a \emph{signal mask} that defines the set of signals
+currently blocked from delivery to that process.
+\end{itemize}
+
+\subsection{10.9 \code{kill} and \code{raise} Functions}
+\begin{itemize}
+\item The \code{kill} function sends a signal to a process or a group of
+processes.
+\item The \code{raise} function allows a process to send a signal to itself.
+\end{itemize}
+
+\code{\#include <signal.h>}
+
+\code{int kill(pid\_t \emph{pid}, int \emph{signo});}
+
+\code{int raise(int \emph{signo});}
+
+Both return: 0 if OK, -1 on error
+
+\begin{itemize}
+\item There are four different conditions for the \emph{pid} argument to
+\code{kill}.
+\begin{description}
+\item[$pid > 0$] The signal is sent to the process whose process ID is
+\emph{pid}.
+\item[$pid == 0$] The signal is sent to all processes whose process group ID
+equals the process group ID of the sender and for which the sender has
+permission to send the signal.
+\item[$pid < 0$] The signal is sent to all processes whose process group ID
+equals the absolute value of \emph{pid} and for which the sender has permission
+to send the signal.
+\item[$pid == -1$] The signal is sent to all processes on the system for which
+the sender has permission to send the signal.
+\end{description}
+\item A process needs permission to send a signal to another process.
+\item The superuser can send a signal to any process.
+\item POSIX.1 defines signal number 0 as the null signal.
+\item If the \emph{signo} argument is 0, then the normal error checking is
+performed by \code{kill}, but no signal is sent.
+\item The call to \code{kill} is not atomic.
+\end{itemize}
+
+\subsection*{10.10 \code{alarm} and \code{pause} Functions}
+\begin{itemize}
+\item The \code{alarm} function allows us to set a timer that will expire at a
+specified time in the future.
+\item When the timer expires, the \code{SIGALRM} signal is generated.
+\item The default action with \code{SIGALRM} is to terminate the process.
+\end{itemize}
+
+\code{\#include <unistd.h>}
+
+\code{unsigned int alarm(unsigned int \emph{seconds});}
+
+Returns: 0 or number of seconds until previously set alarm
+
+\begin{itemize}
+\item The \emph{seconds} value is the number of clock seconds in the future when
+the signal should be generated.
+\end{itemize}
+
+\end{document}
