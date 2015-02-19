@@ -1,0 +1,59 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 8}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 17}
+\maketitle
+
+\section{Signal API}
+\begin{itemize}
+\item \code{sigset\_t} is an integer that is assigned to a signal.
+\item There is no signal number 0.
+\item If you have more than 31 signals, you cannot use an integer to represent
+it and instead you must use a \code{long}.
+\item \code{sigset\_t} is a generic name to control the number of the signal.
+\item We assume that it is an \code{int}.
+\item The operating system will queue a pending signal, but it will only queue
+one of the signals.
+\item One of each signal can be pending.
+\end{itemize}
+
+\section{\code{sigaction()} function}
+\begin{itemize}
+\item While in a signal handler, you can tell the operating system to block
+certain signals.
+\item \code{sigaction} always retains the signal handler. So it will not revert
+to the default value after 1 signal is caught.
+\end{itemize}
+
+\section{POSIX Threads}
+\begin{itemize}
+\item Threading is an extremely important concept for Operating Systems.
+\item When you \code{fork}, you create a child and a parent process.
+\item Web servers should \code{fork} when \code{accept()} is called to allow
+multiple clients in the system.
+\item In order to allow process communication, you would need shared memory or
+pipes between the client processes.
+\item Threading allows two processes to be running, but they share the same
+memory space.
+\item Spawn a thread and it shares a memory space with other threads.
+\item Threads do not share a stack.
+\item Each thread has a placement on the thread.
+\item \code{pthread\_join} is similar to \code{wait\_pid}.
+\end{itemize}
+
+\end{document}

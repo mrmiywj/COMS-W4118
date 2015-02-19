@@ -1,0 +1,107 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 9}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 19}
+\maketitle
+
+\section{POSIX threads}
+\subsection{Create, Exit, Join}
+\begin{itemize}
+\item \code{pthread\_t} is an implementation type that is system-dependent.
+\item Linux ignores the notion of threads. Threads are just processes that share
+memory spaces with the parent process.
+\item In modern Linux, threads are now a different concept from processes.
+\item The \code{ps} command evolved from the old days of UNIX.
+\item \code{LWP} - Light Weight Process ID is the same thing as thread ID.
+\item The leader thread shares the same process ID and the same thread ID.
+\item Linux uses something like process ID for thread ID. It appears they come
+from the same pool of numbers.
+\item All threads from within a process share a process.
+\end{itemize}
+
+\subsection{Mutex}
+\begin{itemize}
+\item An object you declare and initialize
+\item Behaves like a lock.
+\item You declare a variable of the \code{mutex} type and you pass in the
+attributes to it.
+\item There is a timeout version of the mutex api, where if during the time the
+mutex is unable to lock, then it will throw an error.
+\item \code{trylock} is a non-blocking version of \code{block}.
+\item Semaphore has a number and does not belong to any processes.
+\item Mutexes are primarily locking mechanisms.
+\item Semaphores have more ability to share locks across threads, you cannot do
+that through mutexes.
+\end{itemize}
+
+\subsection{Deadlock}
+\begin{itemize}
+\item Deadlock is a condition where you try to lock a mutex, but for some reason
+the mutex isn't able to lock.
+\item One thread tries to lock the same mutex twice.
+\item You have two threads and two mutexes $A$ and $B$. When thread 1 locks
+mutex $A$ successfully, it tries to lock mutex $B$. However, right before mutex
+$B$ gets locked, thread 2 locks mutex $B$ and tries to lock mutex $A$.
+\item A way to avoid this is to make sure all threads lock mutexes in the same
+order.
+\item Order must be preserved otherwise there will be a race condition.
+\end{itemize}
+
+\subsection{Reader-Writer Lock}
+\begin{itemize}
+\item Very useful because a large number of applications fall into this
+character.
+\item If you have some piece of data, such as database code that is multi-
+threaded.
+\item We have a file that represents the data.
+\item If we update a record, we need to write to this file.
+\item If we read from the file, we do not need to write to this file. We are
+just accessing it.
+\item Everyone can read at the same time because nothing it getting updated.
+\item If we use a mutex, we will have a build up in time taken to read the file
+if everyone is just reading.
+\item Using a \code{rwlock} allows you to lock the file in read or write mode.
+\item Write lock is exclusive. You lock in write mode and no other processes can
+proceed.
+\item If you grab the lock in read mode, it's ok for other threads to call read
+lock and lock it at the same time.
+\item If everyone is locking in \code{rdlock}, then there is no locking for
+processes that are just reading.
+\item If one thread grabs a read lock and before it unlocks the process, a write
+lock is called. The write lock will not be allowed in as the writer must wait
+until all reading processes are finished.
+\item If there is a continuous stream of read locks, then no write locks will
+not be able to enter into the file.
+\item One method to avoid this problem is when the writer is called, block all
+new read locks.
+\item While a writer is pending, the subsequent readers would have to wait until
+the writer lock is done.
+\item Incrementing and decrementing a number is a non-atomic method, so we need
+to surround it with a lock.
+\end{itemize}
+
+\subsection{Condition Variables}
+\begin{itemize}
+\item You have this variable that the thread can wait on.
+\item The variable status changes when the thread calls signal or broadcast.
+\item Suppose you have a queue of data items, this queue is in shared memory.
+\item When a thread makes a condition happen, it will notify all other threads
+that this condition has occurred.
+\end{itemize}
+
+\end{document}
