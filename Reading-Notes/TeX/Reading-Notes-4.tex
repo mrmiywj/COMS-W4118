@@ -210,6 +210,111 @@ Returns: 0 or number of seconds until previously set alarm
 \begin{itemize}
 \item The \emph{seconds} value is the number of clock seconds in the future when
 the signal should be generated.
+\item If we intend to catch \code{SIGALRM}, we need to install its signal
+handler before calling \code{alarm}.
+\item The \code{pause} function suspends the calling process until a signal is
+caught.
+\end{itemize}
+
+\code{\#include <unistd.h>}
+
+\code{int pause(void);}
+
+Returns: -1 with \code{errno} set to \code{EINTR}.
+
+\begin{itemize}
+\item Only returns when a signal handler is executed and returns.
+\item Returns with \code{-1} with \code{errno} set to \code{EINTR}.
+\end{itemize}
+
+\subsection*{10.11 Signal Sets}
+\begin{itemize}
+\item POSIX.1 defines the data type \code{sigset\_t} to contain a signal set and
+the following five functions to manipulate singal sets.
+\end{itemize}
+
+\code{\#include <signal.h>}
+
+\code{int sigemptyset(sigset\_t *\emph{set});}
+
+\code{int sigfillset(sigset\_t *\emph{set});}
+
+\code{int sigaddset(sigset\_t *\emph{set}, int \emph{signo});}
+
+\code{int sigdelset(sigset\_t *\emph{set}, int \emph{signo});}
+
+All four return: 0 if OK, -1 on error \\
+
+\code{int sigismember(const sigset\_t *\emph{set}, int \emph{signo});}
+
+Returns: 1 if true, 0 if false, -1 on error.
+
+\begin{itemize}
+\item \code{sigemptyset} initializes the signal set pointed to by \emph{set} so
+that all signals are excluded.
+\item \code{sigfillset} initializes the signal set so that all signals are
+included.
+\item Once we have initialized a signal set, we can add and delete specific
+signals in the set.
+\item \code{sigaddset} adds a single signal to an existing set.
+\item \code{sigdelset} removes a single signal from a set.
+\item All functions that take a signal set as an argument, we pass the address
+of the signal set as the argument.
+\end{itemize}
+
+\subsection*{10.12 \code{sigprocmask} Function}
+\begin{itemize}
+\item A process can examine its signal mask, change its signal mask, or perform
+both operations in one step by calling the following function.
+\end{itemize}
+
+\code{\#include <signal.h>}
+
+\code{int sigprocmask(int \emph{how}, const sigset\_t *restrict \emph{set},
+sigset\_t *restrict \emph{oset});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item If \emph{oset} is a non-null pointer, the current signal mask for the
+process is returned through \emph{oset}.
+\item If \emph{set} is a non-null pointer, the \emph{how} argument indicates how
+the current signal mask is modified.
+\item If \emph{set} is a null pointer, signal mask of the process is not
+changed, and \emph{how} is ignored.
+\end{itemize}
+
+\subsection*{10.13 \code{sigpending} Function}
+\begin{itemize}
+\item The \code{sigpending} function returns the set of signals that are blocked
+from delivery and currently pending for the calling process.
+\end{itemize}
+
+\code{\#include <signal.h>}
+
+\code{int sigpending(sigset\_t *\emph{set});}
+
+Returns: 0 if OK, -1 on error.
+
+\subsection*{10.14 \code{sigaction} Function}
+\begin{itemize}
+\item The \code{sigaction} function allows us to examine and/or modify the
+action associated with a particular signal.
+\end{itemize}
+
+\code{\#include <signal.h>}
+
+\code{int sigaction(int \emph{signo}, const struct sigaction *restrict
+\emph{act}, struct sigaction *restrict \emph{oact});}
+
+Returns: 0 if OK, -1 on error
+
+\begin{itemize}
+\item \emph{signo} is the signal number whose action we are examining or
+modifying.
+\item If \emph{act} is non-null, we are modifying the action.
+\item If \emph{oact} is non-null, the system returns the previous action for the
+signal through the \emph{oact} pointer.
 \end{itemize}
 
 \end{document}
