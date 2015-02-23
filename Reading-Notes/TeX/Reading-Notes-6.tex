@@ -1,0 +1,157 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Reading Notes 6}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 23}
+\maketitle
+
+\section*{Advanced Programming in the Unix Environment \\
+Chapter 14: Advanced I/O}
+
+\subsection*{14.2 Nonblocking I/O}
+\begin{itemize}
+\item ``Slow'' system calls are those that can block forever.
+\item Slow systems calls are
+\begin{itemize}
+\item Reads that can block the caller forever if data isn't present with certain
+file types (pipes, terminal devices, and network devices).
+\item Writes that can block the caller forever if the data can't be accepted
+immediately by these same file types (e.g. no room in the pipe, network flow
+control)
+\item Opens that block until some condition occurs on certain file types (such
+as an open of a terminal device that waits until an attached modem answers the
+phone, or an open of a FIFO for writing only, when no other process has the FIFO
+open for reading)
+\item Reads and writes of files that have mandatory record locking enabled.
+\item Certain \code{ioctl} operations
+\item Some of the interprocess communication functions.
+\end{itemize}
+\item System calls related to disk I/O are not considered slow, even though they
+can block the caller temporarily.
+\item Nonblocking I/O lets us issue an I/O operation and not have it block
+forever.
+\item If the operation cannot be completed, teh call returns immediately with an
+error noting that the operation would have blocked.
+\item There are two ways to specify nonblocking I/O for a given descriptor.
+\begin{enumerate}
+\item If we call \code{open} to get the descriptor, we can specify the
+\code{O\_NONBLOCK} flag
+\item For a descriptor that is already open, we call \code{fcntl} to turn the
+\code{O\_NONBLCOK} file status flag.
+\end{enumerate}
+\end{itemize}
+
+\subsection*{14.4 I/O Multiplexing}
+\begin{itemize}
+\item \emph{Asynchronous I/O} is the technique by which we tell the kernel to
+notify us with a signal when a descriptor is ready for I/O.
+\item It is not portable and we cannot tell which descriptor is ready.
+\item \emph{I/O multiplexing} is when we build a list of descriptors that we are
+interested in and call a function that doesn't return until one of the
+descriptors is ready for I/O.
+\item \code{poll}, \code{pselect}, and \code{select} allow us to perform I/O
+multiplexing.
+\item On return from these functions, we are told which descriptors are ready
+for I/O.
+\end{itemize}
+
+\subsubsection*{14.4.1 \code{select} and \code{pselect} Functions}
+\begin{itemize}
+\item The \code{select} function is portable to all POSIX-compatible platforms.
+\item The arguments we pass to \code{select} tell the kernel
+\begin{itemize}
+\item Which descriptors we're interested in.
+\item Which conditions we're interested in for each descriptor
+\item How long we want to wait
+\end{itemize}
+\item On the return from select, the kernel tell us
+\begin{itemize}
+\item The total count of the number of descriptors that are ready
+\item Which descriptors are ready for each of the three conditions (read, write,
+or exception condition)
+\end{itemize}
+\end{itemize}
+
+\code{\#include <sys/select.h>}
+
+\code{int select(int \emph{maxfdp1}, fd\_set *restrict \emph{readfds}, fd\_set
+*restrict \emph{writefds}, fd\_set *restrict \emph{exceptfd}, struct timeval
+*restrict \emph{tvptr});}
+
+Returns: count of ready descriptors, 0 on timeout, -1 on error
+
+\begin{itemize}
+\item The last argument specifies how long we want to wait in terms of seconds
+and microseconds.
+\begin{description}
+\item[\code{tvptr == NULL}] Wait forever. Can be interrupted if we catch a
+signal. Return is made when one of the specified descriptors is ready or when a
+signal is caught. If a signal is caught, returns -1 with \code{errno} set to
+\code{EINTR}.
+\item[\code{tvptr->tv\_sec == 0 \&\& tvptr->tv\_usec == 0}] Don't wait at all.
+All specified descriptors are tested, and return is made immediately. Polls the
+system to find out the status of descriptors without blocking in the function.
+\item[\code{tvptr->tv\_sec ~= 0 || tvptr->tv\_usec != 0}] Wait the specified
+number of seconds and microseconds. Return is made when one of the specified
+descriptors is ready or when the timeout value expires.
+\end{description}
+\item The middle three arguments are pointers to \emph{descriptor sets}.
+\item A descriptor set is stored in an \code{fd\_set} data type.
+\item The only thing we can do with the \code{fd\_set} data type is allocate a
+variable of this type, assign a variable of this type to another variable of the
+same type, or use one of the following four functions on a variable of this
+type.
+\end{itemize}
+
+\code{\#include <sys/select.h>}
+
+\code{int FD\_ISSET(int \emph{fd}, fd\_set *\emph{fdset});}
+
+Returns: nonzero if \emph{fd} is in set, 0 otherwise \\
+
+\code{void FD\_CLR(int \emph{fd}, fd\_set *\emph{fdset});}
+
+\code{void FD\_SET(int \emph{fd}, fd\_set *\emph{fdset});}
+
+\code{void FD\_ZERO(fd\_set *\emph{fdset});}
+
+\begin{itemize}
+\item These interface can be implemented as either macros or functions.
+\item The first argument of \code{select} is really a count of the number of
+descriptor to check.
+\item There are three possible return values from \code{select}.
+\begin{enumerate}
+\item A return value of -1 means that an error occurred.
+\item A return value of 0 means that no descriptors are ready.
+\item A positive return value specifies the number of descriptors that are
+ready.
+\end{enumerate}
+\item A descriptor is said to be ready when
+\begin{itemize}
+\item if it is in the read set and if a \code{read} from that descriptor won't
+block.
+\item if it is in the write set and if a \code{write} from that descriptor won't
+block.
+\item If it is in the exception set if an exception condition is pending on that
+descriptor.
+\item File descriptors for regular files always return ready for reading,
+writing, and exception conditions.
+\end{itemize}
+\item A descriptor blocking does not affect if \code{select} blocks.
+\end{itemize}
+
+\end{document}
