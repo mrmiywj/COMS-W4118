@@ -1,0 +1,425 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Reading Notes 5}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 22}
+\maketitle
+
+\section*{Advanced Programming in the Unix Environment \\ Chapter 11: Threads}
+\subsection*{11.1 Introduction}
+\begin{itemize}
+\item All threads within a single process have access to the same process
+components, such as file descriptors and memory.
+\item Anytime you try to share a single resource among multiple users, you have
+to deal with consistency.
+\end{itemize}
+
+\subsection*{11.2 Thread Concepts}
+\begin{itemize}
+\item A typical UNIX process can be thought of as having a single thread of
+control: each process is doing only one thing at a time.
+\item Multi-threading allows us to design programs that can do more than one
+thing at a time within a single process, with each thread handling a separate
+task.
+\item We can simplify code that deals with asynchronous events by assigning a
+separate thread to handle each event type.
+\item Threads automatically have access to the same memory address space and
+file descriptors.
+\item The processing of independent tasks can be interleaved by assigning a
+separate thread per task. Two tasks can be interleaved only if they don't depend
+on teh processing performed by each other.
+\item Interactive programs can realize improved response time by using multiple
+threads to separate the portions of the program that deal with user input and
+output from the other parts of the program.
+\item A program can be simplified using threads regardless of the number of
+processors, because the number of processors doesn't affect the program
+structure.
+\item A thread consists of the information necessary to represent an execution
+context within a process
+\item This includes:
+\begin{enumerate}
+\item A \emph{thread ID} that identifies the thread within a process
+\item A signal mask
+\item A set of register values
+\item A stack
+\item A scheduling priority
+\item A policy,
+\item A signal mask
+\item An \code{errno} variable
+\item And thread-specific data
+\end{enumerate}
+\end{itemize}
+
+\subsection*{11.3 Thread Identification}
+\begin{itemize}
+\item Every thread has a thread ID, which is only significant within the context
+of the process to which it belongs.
+\item A thread ID is represented by the \code{pthread\_t} data type.
+\item A function must be used to compare two thread IDs.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_equal(pthread\_t \emph{tid1}, pthread\_t \emph{tid2});}
+
+Returns: nonzero if equal, 0 otherwise
+
+\begin{itemize}
+\item A thread can obtain its own thread ID by calling the \code{pthread\_self}
+function.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{pthread\_t pthread\_self(void);}
+
+Returns: the thread ID of the calling thread
+
+\begin{itemize}
+\item \code{pthread\_self} and \code{pthread\_equal} can be used when a thread
+needs to identify data structures that are tagged with its thread ID.
+\end{itemize}
+
+\subsection*{11.4 Thread Creation}
+\begin{itemize}
+\item As the program runs, its behavior should be indistinguishable from the
+traditional process, until it creates more threads of control.
+\item Additional threads can be created by calling the \code{pthread\_create}
+function.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_create(pthread\_t *restrict \emph{tidp}, const
+pthread\_attr\_t *\emph{attr}, void *(*\emph{start\_rtn})(void *), void
+*restrict \emph{arg});}
+
+Returns: 0 if OK, error number on failure.
+
+\begin{itemize}
+\item The memory location pointed to by \emph{tidp} is set to the thread ID of
+the newly created thread when \code{pthread\_create} returns successfully.
+\item The \emph{attr} argument is used to customize varoius thread attributes.
+\item The newly created thread starts running at the address of the
+\emph{start\_rtn} function.
+\item \emph{arg} is a single argument passed to \emph{start\_rtn}.
+\item When a thread is created, there is no guarantee which will run first: the
+newly created thread or the calling thread.
+\item The set of pending signals for the thread is cleared for the newly created
+thread.
+\end{itemize}
+
+\subsection*{11.5 Thread Termination}
+\begin{itemize}
+\item  A single thread can exit in three ways, thereby stopping its flow of
+control, without terminating the entire process.
+\begin{enumerate}
+\item The thread can simply return from the start routine. The return value is
+the thread's exit code.
+\item The thread can be cancelled by another thread in the same process.
+\item The thread can call \code{pthread\_exit}.
+\end{enumerate}
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{void pthread\_exit(void *\emph{rval\_ptr});}
+
+\begin{itemize}
+\item The \emph{rval\_ptr} argument is a typeless pointer, similar to the single
+argument passed to the start routine.
+\item This pointer is available to other threads in the process by calling the
+\code{pthread\_join} function.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_join(pthread\_t \emph{thread}, void **\emph{rval\_ptr});}
+
+Returns: 0 if OK, error number on failure.
+
+\begin{itemize}
+\item The calling thread will block until the specified thread calls
+\code{pthread\_exit}, returns from its start routinge, or is canceled.
+\item If the thread simply returnf from its start routine, \emph{rval\_ptr} will
+contain the return code.
+\item If the thread was canceled, the memory location specified by
+\emph{rval\_ptr} is set to \code{PTHREAD\_CANCELED}.
+\item By setting \emph{rval\_ptr} to \code{NULL}, the method does not retrieve
+the terminated thread's termination status.
+\end{itemize}
+
+\subsection*{11.6 Thread Synchronization}
+\begin{itemize}
+\item When multiple threads of control share the same memory, we need to make
+sure that each thread sees a consistent view of its data.
+\item WHen one thread can modify a variable that other threads can read or
+modify, we need to synchronize the threads to ensure that they don't use an
+invalid value when accessing the variable's memory contents.
+\item When one thread modifies a variable, other threads can potentially see
+inconsistencies when reading the value of that variable.
+\item Thread have to use a lock that will allow only one thread to access the
+variable at a time.
+\item If the modification is atomic, then there isn't a race condition.
+Similarly, if our data always appears to be \emph{sequentially consistent}, then
+we need no additional synchronization.
+\item Our operations are sequentially consistent when multiple threads can't
+observe inconsistencies in our data.
+\item In a sequentially consistent environment, we can explain modifications to
+our data as a sequential step of operations taken by the running thread.
+\end{itemize}
+
+\subsubsection*{11.6.1 Mutexes}
+\begin{itemize}
+\item A \emph{mutex} is basically a lock that we set (lock) before accessing a
+shared resource and release (unlock) when we're done.
+\item While it is set, any other thread that tires to set it will block until we
+release it.
+\item This mutual-exclusion mechanism works only if we design our threads to
+follow the same data-access rules.
+\item A mutex variable is represented by the \code{pthread\_mutex\_t} data type.
+\item Before we can use a mutex variable, we must first initialize it by either
+setting it to the constant \code{PTHREAD\_MUTEX\_INITIALIZER} or by calling
+\code{pthread\_mutex\_init}.
+\item If we allocate the mutex dynamically, then we need to call
+\code{pthread\_mutex\_destroy} before free the memory.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_mutex\_init(pthread\_mutex\_t *restrict \emph{mutex}, const
+pthread\_mutexattr\_t *restrict \emph{attr});}
+
+\code{int pthread\_mutex\_destroy(pthread\_mutex\_t *\emph{mutex});}
+
+Both return: 0 if OK, error number on failure
+
+\begin{itemize}
+\item To initialize a mutex with the default attributes, we set \emph{attr} to
+\code{NULL}.
+\item To lock a mutex, we call \code{pthread\_mutex\_lock}. If the mutex is
+already locked, the calling thread will block until the mutex is unlocked.
+\item To unlock a mutex, we call \code{pthread\_mutex\_unlock}.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_mutex\_lock(pthread\_mutex\_t *\emph{mutex});}
+
+\code{int pthread\_mutex\_trylock(pthread\_mutex\_t *\emph{mutex});}
+
+\code{int pthread\_mutex\_unlock(pthread\_mutex\_t *\emph{mutex});}
+
+All return: 0 if OK, error number on failure
+
+\begin{itemize}
+\item If a thread can't afford to block, it can use
+\code{pthread\_mutex\_trylock} to lock the mutex conditionally.
+\item If a mutex is unlocked at the time trylock is called, then trylock will
+lock the mutex without blocking and return 0.
+\end{itemize}
+
+\subsubsection*{11.6.2 Deadlock Avoidance}
+\begin{itemize}
+\item A thread will deadlock itself if it tries to lock the same mutex twice.
+\item Deadlocks can be avoided by carefully controlling the order in which
+mutexes are locked.
+\item You'll have the potential for a deadlock only when one thread attempts to
+lock the mutexes in the opposite order from another thread.
+\end{itemize}
+
+\subsubsection*{11.6.3 \code{pthread\_mutex\_timedlock Function}}
+\begin{itemize}
+\item \code{pthread\_mutex\_timedlock} is equivalent to
+\code{pthread\_mutex\_lock}, but if the timeout value is reached,
+\code{pthread\_mutex\_timedlock} will return the error code \code{ETIMEDOUT}
+without locking the mutex.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{\#include <time.h>}
+
+\code{int pthread\_mutex\_timedlock(pthread\_mutex\_t *restrict \emph{mutex},
+const struct timespec *restrict \emph{tsptr});}
+
+Returns: 0 if OK, error number on failure
+
+\begin{itemize}
+\item The timeout specifies how long we are willing to wait in terms of absolute
+time.
+\item The timeout is represented by the \code{timespec} structure, which
+describes time in terms of seconds and nanoseconds.
+\end{itemize}
+
+\subsubsection*{11.6.4 Reader-Writer Locks}
+\begin{itemize}
+\item Three states are possible with a reader-writer lock:
+\begin{enumerate}
+\item Locked in read mode
+\item Locked in write mode
+\item Unlocked
+\end{enumerate}
+\item Only one thread at a time can hold a reader-writer lock in write mode, but
+multiple threads can hold a reader-writer lock in read mode at the same time.
+\item When a reader-writer lock is write locked, all threads attempting to lock
+it block until its unlocked.
+\item When a reader-writer lock is read locked, all threads attempting to lock
+it in read mode are given access, but any threads attempting to lock it in write
+mode block until all the threads have released their read locks.
+\item Reader-writer locks are well suited for situations in which data
+structures are read more often than they are modified.
+\item Reader-writer locks are also called shared-exclusive locks.
+\item Must be initialized before use and destroyed before freeing the underlying
+memory.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_rwlock\_init(pthread\_rwlock\_t *restrict \emph{rwlock},
+const pthread\_rwlockattr\_t *restrict \emph{attr});}
+
+\code{int pthread\_rwlock\_destroy(pthread\_rwlock\_t *\emph{rwlock});}
+
+Both return: 0 if OK, error on failure
+
+\begin{itemize}
+\item Pass null pointer for \emph{attr} if the reader-writer lock is supposed to
+have default attributes
+\item To lock a reader-writer lock in read mode, we call
+\code{pthread\_rwlock\_rdlock}.
+\item To write lock a reader-writer lock, we call
+\code{pthread\_rwlock\_wrlock}.
+\item We unlock the lock by calling \code{pthread\_rwlock\_unlock}.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_rwlock\_rdlock(pthread\_rwlock\_t *\emph{rwlock});}
+
+\code{int pthread\_rwlock\_wrlock(pthread\_rwlock\_t *\emph{rwlock});}
+
+\code{int pthread\_rwlock\_unlock(pthread\_rwlock\_t *\emph{rwlock});}
+
+All return: 0 if OK, error number on failure
+
+\begin{itemize}
+\item We should always check for errors when we call functions that can
+potentially fail.
+\item However, we do not need to check them if we design our locking properly.
+\item We also have the conidtional versions of the reader-writer locking
+primitives.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_rwlock\_tryrdlock(pthread\_rwlock\_t *\emph{rwlock});}
+
+\code{int pthread\_rwlock\_trywrlock(pthread\_rwlock\_t *\emph{rwlock});}
+
+Both return: 0 if OK, error number on failure.
+
+\begin{itemize}
+\item When the lock can be acquired, these functions return 0.
+\item Otherwise, they return the error \code{EBUSY}.
+\end{itemize}
+
+\subsubsection*{11.6.5 Reader-Writer Locking with Timeouts}
+\begin{itemize}
+\item Provides functions to lock reader-writer loks witha  timeout to give
+applications a way to avoid blocking indefinitely.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{\#include <time.h>}
+
+\code{int pthread\_rwlock\_timedlock(pthread\_rwlock\_t *restrict \emph{rwlock},
+const struct timespec *restrict \emph{tsptr});}
+
+
+\code{int pthread\_rwlock\_timedwrlock(pthread\_rwlock\_t *restrict
+\emph{rwlock}, const struct timespec *restrict \emph{tsptr});}
+
+Both return: 0 if OK, error number on failure
+
+\begin{itemize}
+\item The \emph{tsptr} argument points to a \code{timespec} structure specifying
+the time at which the thread should stop blocking.
+\end{itemize}
+
+\subsubsection*{11.6.6 Condition Variables}
+\begin{itemize}
+\item These synchronization objects provide a place for threads to rendezvous.
+\item Protected by a mutex.
+\item Can be initialized statically and dynamically
+\item Can use \code{pthread\_cond\_destroy} function to deinitialize a condition
+variable before freeing its underlying memory.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_cond\_init(pthread\_cond\_t *restrict \emph{cond}, const
+pthread\_condattr\_t *restrict \emph{attr});}
+
+\code{int pthread\_cond\_destroy(pthread\_cond\_t *cond);}
+
+Both return: 0 if OK, error number on failure
+
+\begin{itemize}
+\item Again, setting \emph{attr} argument to \code{NULL} gives default
+attributes.
+\item We use \code{pthread\_cond\_wait} to wait for a condition to be true.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_cond\_wait(pthread\_cond\_t *restrict \emph{cond},
+pthread\_mutex\_t *restrict \emph{mutex});}
+
+\code{int pthread\_cond\_timedwait(pthread\_cond\_t *restrict \emph{cond},
+pthread\_mutex\_t *restrict \emph{mutex}, const struct timespec *restrict
+\emph{tsptr});}
+
+Both return: 0 if OK, error number on failure
+
+\begin{itemize}
+\item The mutex passed to \code{pthread\_cond\_wait} protects the condition.
+\item There are two functions to notify threads that a condition has been
+satisfied.
+\item The \code{pthread\_cond\_signal} function will wake up at least one thread
+waiting on a condition.
+\item \code{pthread\_cond\_broadcast} function will wake up all threads waiting
+on a condition.
+\end{itemize}
+
+\code{\#include <pthread.h>}
+
+\code{int pthread\_cond\_signal(pthread\_cond\_t *\emph{cond});}
+
+\code{int pthread\_cond\_broadcast(pthread\_cond\_t *\emph{cond});}
+
+Both return: 0 if OK, error number on failure
+
+\begin{itemize}
+\item When we call these functions, we are said to be \emph{signaling} the
+thread or condition.
+\item We should signal the threads only after changing the state of the
+condition.
+\end{itemize}
+
+\end{document}
