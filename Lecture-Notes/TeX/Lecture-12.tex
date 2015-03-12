@@ -1,0 +1,99 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 12}
+\author{Alexander Roth}
+\date{2015 -- 03 -- 03}
+\maketitle
+
+\section{UNIX Domain Sockets}
+\begin{itemize}
+\item Reliable across datatype modes.
+\end{itemize}
+
+\subsection{File Sharing}
+\begin{itemize}
+\item When you for \code{fork} a process, you \code{dup} all the file
+descriptors into the child as well as the parent.
+\item Sometimes it is useful to pass an open file between processes, but you
+can't just pass the values to another process with pipes, etc.
+\item Domain socket is the only facility that allows you to pass an open file
+descriptor to another process.
+\item Threads share the same memory, so they are able to access the same file.
+\end{itemize}
+
+\section{Single and Multithreaded Processes}
+\subsection{Why Use Threads?}
+\begin{itemize}
+\item Express concurrency
+\item Efficient communication
+\item Leverage multiple cores (depends)
+\item Having multithreaded programs allows for easier implementation.
+\item Multithreading simplifies single threading logic by having separate
+threads that handle tasks.
+\item A good example is a multiplayer game server.
+\item There is no easy way to control scheduling in a single thread.
+\item The problem with shared memory is that use my setup the region, designate
+the reason, and tear down the region.
+\end{itemize}
+
+\subsection{Multithreading Models}
+\begin{itemize}
+\item User threads: thread management done by user-level threads library; kernel
+knows nothing
+\item Kernel threads: threads directly supported by the kernel.
+\item The kernel knows about these threads.
+\item Kernel level threads are aware of the threads and there is a threaded
+table that is a link list of \code{task struct}s.
+\item If you create a thread in \code{pthread\_create}, linux creates a clone of
+the thread and schedules it accordingly.
+\item Another way to implement threading is to cheat and not let the kernel know
+about the thread and do everything in the user level process. Do everything in
+the user space.
+\item Kernel threads are just like processes, they are scheduled by the kernel.
+\item User threads cannot be preemptively scheduled.
+\item In a program, you must call \code{pthread\_yield()}, which will save the
+thread in some position in memory and jump to a different routine.
+\end{itemize}
+
+\subsection{User Thread Blocking}
+\begin{itemize}
+\item One block thread can block all the threads because the kernel just sees
+one read and does not know that there are other threads in the program.
+\item We can manage this by using \code{select()} to intercept every system call
+beforehand.
+\item This is a possible solution; however, it's messy and hard to implement.
+\end{itemize}
+
+\subsection{Scheduler Activations}
+\begin{itemize}
+\item User-level threads are not really used anymore.
+\item However, the kernel is somewhat aware of the threading.
+\item When a blocking method is call, the call will go to the kernel
+\item Since the kernel is away of the threads, it will block all the threads or
+none at all.
+\item The kernel will alert the thread scheduler and let's it know it can run
+other threads in the mean time.
+\item When the blocking call completes, it will send an interrupt to interrupt
+the current thread that is active.
+\item The kernel then alerts the thread scheduler that the blocking call is
+complete.
+\item The kernel just knows about the thread scheduler.
+\item Slightly violates the encapsulation and separation between the kernel and
+the user space because the kernel needs to know about user threads.
+\end{itemize}
+
+\end{document}

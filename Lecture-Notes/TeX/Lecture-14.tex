@@ -1,0 +1,152 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 14}
+\author{Alexander Roth}
+\date{2015 -- 03 -- 10}
+\maketitle
+
+\section{How to Implement Locks}
+\subsection{Disable Interrupts}
+\begin{itemize}
+\item Used in early linux kernel when there was only one linux processor.
+\item As soon as there were multiple CPU's this method stopped working.
+\end{itemize}
+
+\section{Implementing Locks Using Software}
+\begin{itemize}
+\item Peterson's algorithm works, but not in modern systems.
+\end{itemize}
+
+\subsection{First Attempt}
+\begin{itemize}
+\item Most na\"ive attempt; there is an integer flag and you can check if it is
+set.
+\item When the flag is zero, someone has unlocked the lock.
+\item This method does not work as there will be a gap between the time you set
+the lock and the time you check the lock.
+\item It is possible that both threads could enter a critical section without
+realizing there is another thread.
+\item Any time you see a lock that needs a flag to be set, you need to keep an
+eye out for a gap in the program where two threads could occur.
+\end{itemize}
+
+\subsection{Second Attempt}
+\begin{itemize}
+\item Two flags, both set to 0.
+\item First flag mapped to the first thread and so on.
+\item When a thread wants to take a lock, it calls \code{lock}.
+\item It then sets the corresponding flag number.
+\item It checks the flag previous to it to see if the other thread wants to be
+there.
+\item As long as the other thread does not want the lock, the current thread can
+go forward.
+\item You set your flag and then you test the other flag; thus, it eliminates
+the critical section race condition.
+\end{itemize}
+
+\subsection{Third Attempt}
+\begin{itemize}
+\item Single variable that indicates who's turn it is.
+\item When it is your turn, you run. Otherwise, you wait.
+\item Achieves mutual exclusion, only one thread can run at a time.
+\item There is no way that two threads can be in a critical section together.
+\item The problem is that it can create a deadlock.
+\item Three conditions for a lock"
+\begin{enumerate}
+\item Must provide mutual exclusion
+\item Must have each thread progress.
+\item There cannot be starvation on a thread.
+\end{enumerate}
+\item Mutual exclusion is preserved.
+\item Thread progress is not preserved.
+\item What happens if a thread enters a critical section, grabs a lock, unlocks,
+and wants to lock again.
+\item However, when you unlock, you must give away your turn.
+\item A lock cannot depend on the thread's behavior.
+\item This system depends on threads outside of the critical section of the
+system.
+\end{itemize}
+
+\subsection{Final Attempt: Peterson's Algorithm}
+\begin{itemize}
+\item Combination of the previous two approaches.
+\item Turn-based mechanism AND intent-based mechanisms.
+\item Problem with turn-based system was that you must alternate.
+\item Here you kind of do the same thing, but first you wait until its the other
+guy's turn.
+\item It only matters who's turn it is as long as both are interested in using
+the system.
+\item If both are not interested, then you don't have to wait for the other
+thread's turn.
+\end{itemize}
+
+\subsection{Memory Barriers}
+\begin{itemize}
+\item Ensures that all memory operations up to the barrier are executed.
+\item Peterson algorithm will not work because of modern CPU behavior.
+\item Barrier is used a lot in Linux code.
+\end{itemize}
+
+\section{Version 3: Hardware Instructions}
+\begin{itemize}
+\item Version 1: Disable interrupt
+\item Version 2: Software Locks
+\item The only practical solution is to have a hardware instruction.
+\item Have a static variable called \code{flag}, when \code{test\_and\_set}
+operates, return the previous value of the flag.
+\item Busy waiting is bad.
+\item \code{volatile} keyword means that the memory location pointed to by the
+pointer may change behind you.
+\item So multi-threaded programs need to know that these memory locations
+change.
+\end{itemize}
+
+\section{Spin-wait or block?}
+\begin{itemize}
+\item Problem of spin-wait: waste CPU cycles.
+\item You want to avoid sleeping as a sleep command has an overhead attached
+with it.
+\item Having a spin lock is good for short operations.
+\item You only spin when the lock is taken by another thread.
+\item Spin locks should be used if the lock is released quickly as long as the
+critical section is small.
+\item It the thread has a large critical section, it is better to put the thread
+to sleep and check after the thread is done.
+\item Typically not used for user-programs as user programs can be preempted at
+any time.
+\item Spin-locks are not useful when you cannot control the preemption of the
+system.
+\item POSIX has a spinlock API, but it is rarely used.
+\item If you are using a uni-processor, it's a bad idea to use a spin-lock
+becuase it will spin forever.
+\item There is no reason to spin if you are not going to get interrupted.
+\end{itemize}
+
+\section{Yield}
+\begin{itemize}
+\item Instead of continuously checking a process, just put the process to sleep
+and check at a later time.
+\item The operating system will move onto a different process.
+\item The issue is that someone has to wake up the threads to check for the
+flag.
+\item \textbf{Thundering Herd} - all the locks wake up to just have one lock
+receive and then the rest will go back to sleep.
+\item These processes are just very inefficient; why should all the threads wake
+up when only one thread will take the event.
+\end{itemize}
+
+\end{document}

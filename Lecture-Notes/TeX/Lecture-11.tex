@@ -1,0 +1,68 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 11}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 26}
+\maketitle
+
+\section{\code{select} in a Web Server}
+\begin{itemize}
+\item \code{select} will block until there is something to return on a socket.
+\item Socket being closed on one end is an activity, so the select will return
+that.
+\item Context switches are something that should be avoided as they are costly
+and expensive.
+\item \code{select} is simpler, but slower, no concurrent execution.
+\end{itemize}
+
+\section{Domain Sockets}
+\subsection{Summary of UNIX IPC so far}
+\begin{itemize}
+\item Shared memory, there are two kinds of shared memory, purely written memory
+not backed by a file and memory that is mapped to a file.
+\item File-backed mmap maps a region of memory to a file. Thus, unrelated
+processes can map regions of memory to a file and access these regions.
+\item Between multiple threads and processes, we have to think about
+synchronization.
+\item With multiple threads and processes sharing a memory region, we should use
+unnamed POSIX semaphores.
+\item Use a semaphore in a process context, use mutex lock, and condition
+variables in a threading context.
+\item Pipe returns a descriptor, while FIFO returns a name to the pipe
+\item TCP sockets intended for networking, so high overhead. No boundaries as
+per TCP protocol of splitting up packets.
+\item UDP sockets create a pipeline, unreliable.
+\end{itemize}
+
+\subsection{UNIX Domain Sockets}
+\begin{itemize}
+\item Cross between pipes and sockets
+\item Uses the socket API
+\item Behaves like a socket
+\item You can only do local communication, this is \textbf{NOT} networking.
+\item Used as a socket between two processes running on the same machine.
+\item Thus, we do not have any overhead related to network sockets.
+\item There is a stream and datagram mode, but it will always be reliable.
+\item No protocol overhead.
+\item Full duplex.
+\item Preserves the message boundaries unlike regular TCP.
+\item Convenient, reliable, fast, and preserves message boundaries. The message
+can be as long as it wants, but it will only accept the specified number of
+bytes.
+\end{itemize}
+
+\end{document}

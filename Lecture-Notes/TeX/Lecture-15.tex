@@ -1,0 +1,162 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 15}
+\author{Alexander Roth}
+\date{2015 -- 03 -- 12}
+\maketitle
+
+\section{Spin Locks}
+\begin{itemize}
+\item Checks a signal variable over and over.
+\item Wastes CPU cycles.
+\end{itemize}
+
+\subsection{Using \code{yield()} with Sleep Locks}
+\begin{itemize}
+\item We can replace the empty \code{while} loop with a call to the function
+\code{yield}.
+\item \code{Yield} is not defined.
+\item There must be some notion of a variable and we must let the operating
+system put other processes to sleep.
+\item The operating system must have some way of knowing who is waiting on which
+variable.
+\item We need some data structure that keeps track of which processes are
+waiting on the lock.
+\item If the operating system were to wake up all the processes at once, there
+would be a huge overhead from all the context switches and only one processes
+would get the lock.
+\item There is no knowing when we will get a turn.
+\item Thus, \textbf{starvation} is a real possibility.
+\item Bounded waiting is not satisfied.
+\item There must be some notion of a \code{wake} function and some idea of a
+queue that contains the processes.
+\item Each lock will have a queue associated with it that holds all the waiting
+processes.
+\item Thus, there are processes waiting in a first come, first serve fashion.
+\item Having a \code{flag} variable has the notion of a lost wakeup and a
+starved process.
+\item Starvation is the hardest condition to satisfy with locking.
+\item Oftentimes, the condition will be sacrificed in order to get the system
+working.
+\end{itemize}
+
+\subsubsection{Fixing Sleeping Locks}
+\begin{itemize}
+\item \code{mutex} structure that has a flag and a queue.
+\item \code{Lock}: function acquires a lock by setting the flag, otherwise it
+puts itself into the queue.
+\item \code{Unlock}: if queue is empty, set the flag ot zero or dequeue and
+wakeup the process we took out of the queue.
+\item Flag does not get reset when we take a process off of the queue.
+\item To avoid losing wake ups, we implement a spin lock with a guard variable.
+\item Inside the \code{yield} function, we need to check that we are dequeued
+already.
+\item You need to recognize when a race condition is possible.
+\item You need to make the area that holds the spin lock as small as possible.
+\item Spin lock must happen in the kernel, and should only happen in the cases
+where you are doing something very short.
+\end{itemize}
+
+\section{Readers-Writers Problem}
+\begin{itemize}
+\item Old, but common paradigm. You have to read a lot, but sometimes you have
+to write.
+\item We have a single lock and we lock and unlock in different modes.
+\item Lock and unlock in either read or write mode.
+\end{itemize}
+
+\subsection{Implementing Reader-Writer Lock}
+\begin{itemize}
+\item For read lock, we have a counter that notes how many readers lock at a
+time.
+\item When one reader has a lock, all the other readers will keep going.
+\item When you increment the number of readers, we need to lock and unlock while
+we increment to maintain atomicity.
+\item Synchronization is not easy.
+\item The issue with this implementation is that the writer may starve if there
+is a constant stream of readers.
+\item Writer can only activate until all the readers have moved through.
+\item We introduce another lock called \code{writer}, that locks around a
+\code{write\_lock} call in order to acquire the original lock.
+\item Using one lock for two purposes is typically a bad idea.
+\end{itemize}
+
+\section{Semaphore Motivation}
+\begin{itemize}
+\item There are some things a simple \code{mutex} cannot do.
+\item Sometimes you want two threads, one to prepare a data structure and one to
+wait until the first is done.
+\item You want to impose order.
+\item Mutexes do not provide order; semaphores do.
+\item Semaphores can handle the producer/consumer problem.
+\item A semaphore is some synchronization variable that contains an integer
+value.
+\item The integer value cannot be accessed directly.
+\item Binary semaphore is similar to a mutex, while a counting semaphore has an
+integer value more than 1.
+\item You can post over the initial value of the semaphore.
+\item The initial value is not the maximum value; you can extend past it.
+\end{itemize}
+
+\subsection{Producer-Consumer Problem}
+\begin{itemize}
+\item We have a fixed-bound buffer that contain a mix of data and nothing.
+\item Producer has a pointer to the next empty slot.
+\item Consumer has a pointer to the first filled slot.
+\item Multiple consumers will consume an item in each slot and move the pointer
+to the next slot.
+\item If consumer reaches the end of the buffer, it wraps around to the
+beginning of the buffer, so the buffer is a circular buffer.
+\item The buffer is filled when Producer is right behind the Consumer pointer.
+\item The buffer is empty when the Consumer pointer is right behind the Consumer
+counter.
+\end{itemize}
+
+\subsubsection{Producer-Consumer Implementation}
+\begin{itemize}
+\item We create two semaphores: \code{full} and \code{empty}.
+\item Producer waits on the empty semaphore until empty is non-zero. If there is
+no empty spots, then we cannot produce.
+\item Once empty becomes a positive number, then there is a slot open in the
+array.
+\item Producer will then decrement empty, and fill the slot, finally increment
+the number of the full semaphore to say there is a newly filled position.
+\item Consumer will do the opposite of the producer function.
+\item If full is zero, then there is no item in the buffer; otherwise, empty the
+slot and increment the empty semaphore.
+\item Need to synchronize the movement between the empty and full semaphores.
+\item Thus, we create a new guard semaphore during the fill slot and empty slot
+phases.
+\item Needs to be guarded to avoid multiple consumers and producers creating a
+race condition.
+\item The guard provides the mutual exclusion property.
+\end{itemize}
+
+\section{Monitors and Condition Variables}
+\subsection{Montiors}
+\begin{itemize}
+\item Monitor is the fusion of synchronization and object-oriented programming.
+\item Every java object is a monitor.
+\item It is an object-oriented class where every method is a synchronized
+method.
+\item Every method you call has to grab the lock and release said lock at the
+end of the method.
+\item Every object has hidden variables, which is a mutex and $N$-many
+conditional variables.
+\end{itemize}
+
+\end{document}

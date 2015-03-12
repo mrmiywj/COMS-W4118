@@ -1,0 +1,105 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 13}
+\author{Alexander Roth}
+\date{2015 -- 03 -- 05}
+\maketitle
+
+\section{Thread Design Issues}
+\begin{itemize}
+\item The underlying kernel will choose any random thread to run a program.
+\item The thread is chosen from any underlying thread that is willing to accept
+a signal.
+\end{itemize}
+
+\section{Synchronization}
+\begin{itemize}
+\item \code{++} and \code{--} are not thread-safe operators.
+\item \code{taskset} is a program you can use that runs other programs while
+setting the specific CPU to use.
+\end{itemize}
+
+\subsection{Race Conditions}
+\begin{itemize}
+\item Hard to reproduce unless you are using multiple CPU's.
+\item Non-deterministic.
+\item We can attempt to fix the scheduling of the operating system, so that the
+same thing happens every time.
+\item If you can reproduce the exact scheduling from time 0 to some point, there
+is a good chance you can reproduce the error.
+\end{itemize}
+
+\subsection{How to Avoid Race Conditions?}
+\begin{itemize}
+\item We can use locking.
+\item Atomic operations (all or nothing) would prevent operations from being
+interleaved.
+\item Create a super instruction that does what we want atomically.
+\item We cannot have an atomic instruction for every single possible case.
+\item \textbf{Critical sections} are sections of code that cannot be broken up.
+They must be atomic.
+\item \textbf{Liveness} cannot allow a deadlock to occur.
+\item We strive for \textbf{Safety}, \textbf{Liveness}, and \textbf{Bounded
+waiting} from our threading environment.
+\item It is possible for an operating system to not schedule one thread for a
+while.
+\item An operating system may not schedule threads in a fair, distributed
+fashion.
+\item Thus, the synchronization method must work for any scenario, even if the
+thread is running slowly.
+\item Critical sections should be \textbf{efficient}, \textbf{fair}, and
+\textbf{simple}.
+\item Busy waiting (or spin locking) happens often in the kernel. Look it up.
+\item Efficiency must be considered in context. There is not one absolute case.
+\item Fairness implies that a thread should not wait too long to run.
+\item Complex API's are always doomed for failure, so be sure to avoid this
+issue.
+\end{itemize}
+
+\subsection{Implementing Critical Sections}
+\subsubsection{Version 1: Disable Interrupts}
+\begin{itemize}
+\item Concurrency issues happen when signals interrupt threads.
+\item Timer interrupts cause processes to halt and jump between processes.
+\item Disabling interrupts only makes sense in the kernel, not the user space.
+\item If you disable signal interrupt on a single CPU, the running program will
+run forever.
+\item Disabling interrupts allows a set of operations to become atomic.
+\item This style of coding does not work on multiprocessors.
+\item Disabling interrupts ruins efficiency on the system, so it's generally a
+bad idea.
+\item This is legitimate style on uni-processing systems, typically when the
+kernel needed to lock something and do something.
+\end{itemize}
+
+\subsubsection{Version 2: Software Locks}
+\begin{itemize}
+\item There are a number of software algorithms that we can implement to provide
+a locking mechanism.
+\item The \textbf{Peterson's algorithm} is a software-based lock algorithm that
+does not require anything special from the hardware.
+\item The only assumptions needed are:
+\begin{enumerate}
+\item that loads and stores must be atomic.
+\item We assume hardware operations execute in a serial order.
+\item We do not require special hardware instructions.
+\end{enumerate}
+\item In general adversarial scheduler model useful to think about concurrency
+problems.
+\end{itemize}
+
+\end{document}

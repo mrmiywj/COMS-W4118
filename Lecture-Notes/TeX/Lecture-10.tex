@@ -1,0 +1,49 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 10}
+\author{Alexander Roth}
+\date{2015 -- 02 -- 24}
+\maketitle
+
+Jae likes to go other threads and stuff that people should have read in the
+textbook...
+\begin{itemize}
+\item Be sure to notify when you are in the lock.
+\end{itemize}
+
+\section{Nonblocking I/O and I/O Multiplexing}
+\subsection{Nonblocking I/O}
+\begin{itemize}
+\item Certain I/O operations are defined as slow.
+\item Slow operations are defined as operations that can block forever.
+\item A slow call can be nonblocking (returns immediately if nothing is there).
+\item When you set a file descriptor to nonblocking, it will only be able to
+write what it can write immediately and it will fail otherwise.
+\end{itemize}
+
+\subsection{I/O Multiplexing}
+\begin{itemize}
+\item \code{select} allows you to find which file descriptors you can use that
+aren't blocking.
+\item \code{select} will block you until you are ready for \code{reads} and
+\code{writes}.
+\item \code{maxfdp1} is the file descriptor with the largest number plus 1. The
+select function will check a series of bytes up to that point for ready file
+descriptors.
+\end{itemize}
+
+\end{document}
