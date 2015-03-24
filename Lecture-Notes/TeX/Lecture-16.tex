@@ -1,0 +1,109 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 16}
+\author{Alexander Roth}
+\date{2015 -- 03 -- 24}
+\maketitle
+
+\section{Semaphore Uses: Execution Order}
+\begin{itemize}
+\item Semaphore allows to different threads to wait and post separately.
+\item Can be used when you want to impose order.
+\item Mutex just makes sure that threads cannot overlap.
+\item Cannonical example is the producer-consumer model.
+\end{itemize}
+
+\section{Conditions Vs. Semaphore}
+\begin{itemize}
+\item Semaphores are sticky, they have a number.
+\item Every thread that calls \code{sem\_post} will increment the semaphore.
+\item Every thread that calls \code{sem\_wait} will decrement the semaphore.
+\item There is no waiting.
+\item The only time you block with a semaphore is when the semaphore goes to 0,
+the number must be positive.
+\item The ordering doesn't matter in terms of coordination. Things can get lost.
+\item Semaphores have memory
+\item Condition variables do not. They only send a signal that is expected to be
+caught by a
+\end{itemize}
+
+\section{\code{sem\_post}}
+\begin{itemize}
+\item Locks the mutex within the semaphore.
+\item Increments the count of the semaphore.
+\item Alert the threads to the increment with \code{pthread\_cond\_signal}.
+\item Unlock the mutex within the semaphore.
+\end{itemize}
+
+\section{\code{sem\_wait}}
+\begin{itemize}
+\item Lock the mutex
+\item Check that the count is not zero.
+\item If the count is zero set the wait, come back and check later.
+\item Otherwisre, decrement the count.
+\item Unlock the mutex within the semaphore.
+\end{itemize}
+
+\section{Mesa Semantics}
+\begin{itemize}
+\item Modern operating systems use this type of competition variables.
+\item When you come out a wait, you have to reacquire the lock; otherwise
+another process can come in and take this lock.
+\item \textbf{Hoare Semantics:} Suspends the signaling thread, and immediately
+transfers control to the woken thread.
+\item \textbf{Mesa Semantics:} \code{signal()} moves a signle wiating thread
+from the blocked state to a runnable state, then the signaling thread continues
+until it exists the monitor.
+\item Typically, you will signal before you unlock the mutex.
+\end{itemize}
+
+\section{System Calls}
+\begin{itemize}
+\item The kernel address space contains every process mapped to it.
+\item Every process has the top first gigabyte mapped to the kernel.
+\item Virtual address spaces can be mapped to single physical addresses.
+\item If you call a system call that is executed on behalf of a process, there
+is a little bit of the stack allocated for each process.
+\item A small amount of stack is allocated in the kernel for any process calls
+that would appear.
+\item System calls elevate privilege of user process.
+\item The CPU switches into privilege mode, which allows all instructions to
+become available.
+\item Thus, any user can inject code into the system.
+\item System calls must verify every single parameter to make sure it is not
+doing anything illegal.
+\item You should not be able to pass any pointer to write because you can
+overwrite memory you weren't supposed to touch.
+\end{itemize}
+
+\subsection{System Call Dispatch}
+\begin{itemize}
+\item A user process invokes a system call.
+\item There is some facility that allows the CPU to switch from the user mode to
+kernel mode.
+\item There are three ways that a running process can be interrupted.
+\begin{enumerate}
+\item Hardware Interrupt - Sent from device to processor (timers, etc.)
+\item Software Interrupt - Instruction loaded by processor, you are interrupting
+yourself to do something else. This is the only way to jump into the kernel and
+make system calls.
+\item Processor - Exceptions (invalid instructions)
+\end{enumerate}
+\end{itemize}
+
+
+\end{document}
