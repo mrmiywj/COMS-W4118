@@ -1,0 +1,78 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 18}
+\author{Alexander Roth}
+\date{2015 -- 04 -- 02}
+\maketitle
+
+\section{The Linux Kernel}
+\subsection{Header Files}
+\begin{itemize}
+\item It's impoosible to know everything about the linux kernel at any given
+time.
+\item It's just too big. \emph{Phrasing}.
+\item You are not going to be able to become a code ninja over night.
+\end{itemize}
+
+\subsection{Source Code}
+\begin{itemize}
+\item The documentation directory holds all necessary documentation.
+\item The \code{kernel} file is the top level directory.
+\end{itemize}
+
+\subsection{Processes or Threads}
+\begin{itemize}
+\item The generic term in linux is \code{task}
+\item In theoretical operating systems, the names are usually process
+descriptor, process control block, task descriptor, etc.
+\item These things are some structure in the kernel memory that maintain a link
+list that represents running processes.
+\item If you have multiple threads in a process, they all share these resources.
+\item \code{task struct} maintain pointers to all the necessary values in the
+operating system.
+\item When a user program calls read, the system jumps into kernel mode.
+\item When we are in kernel mode, there is a special kernel stack that is
+created.
+\item The kernel cannot trust addresses provided by the user.
+\item It is not a privileged operation to load things into a register.
+\item The kernel is in complete control and only one copy of the kernel is
+running at a time, so you only need one kernel stack.
+\item Once you are in kernel mode, you are never going to switch processes.
+\item When linux had to support multiple CPU's, a locking mechanism was needed.
+\item A pre-empted kernel means that the kernel is safe to run on multiple CPU's
+at the same time.
+\item Every process has two stacks
+\begin{enumerate}
+\item User stack
+\item Small part of the kernel stack (typically 4KB)
+\end{enumerate}
+\item Memory is counted in chunks or pages. One page is typically 4KB.
+\end{itemize}
+
+\subsection{Process Descriptor}
+\begin{itemize}
+\item \code{task\_struct} is a huge structure.
+\item If you are running something in \code{sudo}, the effective user becomes
+\code{boot}, while the standard user is yourself.
+\item Effective user determines what you can and cannot do within a system.
+\item Linux uses part of a task's kernel-stack page-frame to store thread 
+information.
+\item Do not use the word current because it's a defined macro.
+\item Processes are all interlinked in an embedded linked list.
+\end{itemize}
+
+\end{document}

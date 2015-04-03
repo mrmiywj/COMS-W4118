@@ -1,0 +1,89 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 17}
+\author{Alexander Roth}
+\date{2015 -- 03 -- 31}
+\maketitle
+
+\section{Linux System Call Dispatch}
+\begin{itemize}
+\item Suppose we wrote a hello world application that uses \code{printf}.
+\item \code{printf} is a library code that is run within your executable.
+\item At the end of the day, \code{printf} will call the system call
+\code{write}.
+\item During the \code{write} call, the system will enter the \code{kernel}.
+\item \code{write} is a C function; \code{write} is a library function but we
+regard it as a system call because the library function is pretty much the same
+as the system call.
+\item \code{write} stores the number for a write system call into a register.
+\item The instruction \code{int 0x80} calls a system interrupt to the OS.
+\item There are many types of software interrupts. \code{0x80} is reserved for
+invoking system calls.
+\item When you call \code{int 0x80}, we jump to the kernel to the function
+called \code{system\_call}.
+\item \code{system\_call} runs a function that points to a table called
+\code{sys\_call\_table}, which contains the \code{sys\_write} function.
+\item Every system call has to have a corresponding C level library wrapper.
+\item System calls just invoke an interrupt with a number in a register.
+\item Arguments for system calls go into different registers.
+\item The act of invoking a system call should not be privileged because there
+needs to be a method to get you into the privileged mode.
+\end{itemize}
+
+\section{System Call Parameter Passing}
+\begin{itemize}
+\item In linux, when there are fewer than 6 parameters, they are passed into
+register.
+\item All linux system calls are either integers or pointer parameters.
+\item Linux has 300+ system calls.
+\item If you are writing a system call, you have to make sure that whatever
+parameter is passed in, must be checked.
+\item You cannot trust random pointer values that the user gave you.
+\item At the system call level, everything is privileged. Whatever happens will
+happen.
+\item If you blindly start adding values to a pointer, you could accidentally
+corrupt the kernel.
+\item You must make sure that whatever something points to points to the
+legitimate part of the program.
+\item If user passes a parameter, you must call a helper function to pull the
+information from the userspace.
+\item These helper functions can block becuase you need to allocate memory for
+the system.
+\item Memory allocation simply means a lot of things can happen in the
+background while you are locating a section of memory to access and backup.
+\end{itemize}
+
+\section{Tracing System Calls in Linux}
+\begin{itemize}
+\item \code{strace} used to trace system calls when a progarm is run.
+\item \code{strace} is useful for debugging a program.
+\item It's impossible to monitor a program without changing the state of the
+program.
+\item The kernel has to fundamental support tracing in the code in order to
+allow for debugging.
+\item You can give an environment variable to the main method.
+\item \code{brk} is a system call that allocates items onto the heap.
+\item \code{malloc} increases the heap region by some fixed amount and manages
+the size by some number of bytes.
+\item Unless you force it, gcc will not link the C library statically.
+\item The C library code is actually loaded dynamically at runtime.
+\item Thus, the newest version of the C code can be loaded in at once, and there
+can be one copy of the library code.
+\item All memory is virtual memory, which map to the physical space underneath.
+\end{itemize}
+
+\end{document}
