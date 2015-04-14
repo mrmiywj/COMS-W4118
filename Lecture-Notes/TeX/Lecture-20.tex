@@ -1,0 +1,79 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 20}
+\author{Alexander Roth}
+\date{2015 -- 04 -- 08}
+\maketitle
+
+\section{Examining the Kernel Memory}
+\begin{itemize}
+\item We are now in the process stack for the kernel
+\item Suppose we have four processes running.
+\item Each process has a task struct that is a linked list connecting it to the
+next process.
+\item You can only have a fixed number of processes.
+\item There is also a \emph{run queue} that links together some of the
+processes.
+\item If a processes are in the run queue, their state is set to
+\code{TASK\_RUNNING}, which is the value of 0.
+\item \code{TASK\_RUNNING} means the process is eligible to run, not that it is
+currently running.
+\item Run queues in 2.6 are organized into a huge number of queues, with a given
+priority, so the big O notation is constant time.
+\item In 3.x, we use a CFS algorithm (Completely Fair Scheduler). It tries to
+give more priority on I/O intensive processes.
+\item Think of the run queue as linking all the processes that are able to run.
+\end{itemize}
+
+\section{Task States}
+\begin{itemize}
+\item Each task struct has an integer field called \code{tick}, which is how
+many clock ticks it has gone through.
+\item We can assign a timeout value to the amount of ticks that a process can go
+through.
+\item There is a flag within the \code{task\_struct} called
+\code{NEED\_RESCHED}, which is set whenever a timeout occurs.
+\item Every interrupt has a common routine when it is about to return.
+\item The common routine is right before the system goes back in the user mode.
+\item We check the \code{NEED\_RESCHED} flag.
+\item We call the function \code{schedule()} to switch tasks.
+\item Eventually, \code{schedule()} calls a function called
+\code{context\_switch()}
+\item Context switch is system-dependent, and it saves the current process
+information and then go to the next task that was picked to run.
+\item We have a list of runnable processes that the system will look through
+with the scheduling algorithm to determine which process to run next.
+\item Timer interrupts have the ability to preempt other processes.
+\item A running process can go to sleep and enter the sleeping state.
+\item When does a running process enter into a blocked sleeping state?
+\item There are certain situations when the kernel makes processes
+uninterruptible.
+\item A blocking system call sends the running task into a sleeping process.
+\item Suppose we are blocking a task that is reading from a keyboard.
+\item The read system call would set the task to interruptible while it waits
+for the keyboard.
+\item There must be some data structure that knows what process task struct is
+waiting on it.
+\item That is why there is a wait queue.
+\item When the system receive information from the keyboard, the task struct
+will be woken up from the wait queue on \code{wake\_up()}
+\item We run the command \code{try\_to\_wake\_up()}.
+\item When an interruptible process gets a signal, it wakes up but a field is
+set to go to the signal handler.
+\end{itemize}
+
+\end{document}

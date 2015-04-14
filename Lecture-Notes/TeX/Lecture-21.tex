@@ -1,0 +1,114 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 21}
+\author{Alexander Roth}
+\date{2015 -- 04 -- 14}
+\maketitle
+
+\section{Disk Interface}
+\begin{itemize}
+\item For the file system, the disk is just a one dimensional array of logical
+sectors.
+\item Modern drives export logical block addresses and do the mapping ot the
+cylinder/head/sector internally.
+\item If you try to read sequentially through a block, the head will read
+through the platter and move inwards towards the center of the disk.
+\item The disk is optimized for sequential access and sequential access is fast.
+\item It is a good idea to arrange information sequentially.
+\end{itemize}
+
+\section{File Systems}
+\begin{itemize}
+\item There are two modes of access:
+\begin{enumerate}
+\item Sequential Access
+\item Random Access
+\begin{itemize}
+\item Randomly address any block, difficult to make fast.
+\end{itemize}
+\end{enumerate}
+\item We want to minimize unnecessary slow down by modeling the data system
+cleverly.
+\end{itemize}
+
+\subsection{Disk Management}
+\begin{itemize}
+\item We need to keep track of where the file is and which file takes up which
+block.
+\item Need to track where the file is on disk.
+\item Need to have some metadata on disk that maintains the information of the
+disk, which is handled by the file system.
+\end{itemize}
+
+\subsection{Allocation Strategies}
+\begin{itemize}
+\item There are various approaches to allocating information on a disk.
+\end{itemize}
+
+\subsubsection{Contiguous Allocation}
+\begin{itemize}
+\item We will allocate a contiguous number of blocks to a file and break it up
+accordingly.
+\item You need to keep track of where a file is and how big it goes.
+\item Most of the block is used for itself.
+\item easy to implement, there is a low storage overhead.
+\item The issue is that it is almost impossible to grow the file.
+\item There can be overlaps in the file, so we may need to relocate the file
+accordingly.
+\item If files increase in size and need to be relocated, there will be holes
+within the disk, where information cannot sit. Thus, there is \emph{external
+fragmentation}.
+\item \emph{Internal fragmentation} is the issue of not all memory being written
+within a block.
+\item These systems are typically used for write-once read-often systems. Such
+as DVD's, tape drives.
+\end{itemize}
+
+\subsubsection{Extent-based Allocation}
+\begin{itemize}
+\item Instead of one contiguous chunk per file, there are multiple chunks per
+file.
+\item Similar to contiguous allocation, but with multiple chunks.
+\item The metadata has to keep track of more information: start of the chunk and
+length of the chunks.
+\end{itemize}
+
+\subsubsection{Linked Allocation}
+\begin{itemize}
+\item Treat the disk drive as a linked list.
+\item There is a chunk of data within the block, and the last segment of the
+data is a pointer to the next block in the chain.
+\end{itemize}
+
+\subsubsection{FAT Table}
+\begin{itemize}
+\item There is a file allocation table that contains pointers to the addresses
+of all the files on the disk.
+\item The files on the disk have pointers to the other chunks of the same file.
+\item All the file table knows is that there is a file at a given address.
+\item Fast random access. Only search through the cached FAT.
+\item There is a large storage overhead for FAT table.
+\item Possibly slow sequential access.
+\end{itemize}
+
+\subsubsection{Indexed Allocation}
+\begin{itemize}
+\item You store in a file metadata all the blocks that a file has.
+\item The first block holds all the indexes to the other chunks.
+\item Unix systems use an inode
+\end{itemize}
+
+\end{document}

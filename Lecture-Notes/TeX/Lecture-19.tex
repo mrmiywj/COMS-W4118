@@ -1,0 +1,124 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 19}
+\author{Alexander Roth}
+\date{2015 -- 04 -- 07}
+\maketitle
+
+\section{Diving into the Linux Kernel}
+\begin{itemize}
+\item the macro \code{SYSCALL\_DEFINE0} is used to define a system call with no
+formal parameters.
+\item \code{pid} is really the id of the \code{task\_struct} which is used to
+denote the value of each thread.
+\item There is some virtualization built into the linux kernel.
+\item Linux has this concept of a \emph{container}.
+\item A container is a small world within the kernel that allows for
+virtualization throughout the system.
+\item Self-contained environments for processes.
+\item It is possible that using a container creates different PID's from what
+the user sees and what the kernel actually knows about.
+\item These different PID's are mapped together so the kernel knows what the
+user is referring to.
+\item There are two structs in the \code{task\_struct}: parent and real parent.
+\item Real parent is the process that created you. Parent is the process that is
+the current parent, or the process that receives the \code{SIGCHILD} signal.
+\item The distinction between \code{getppid} and \code{getpid} is the use of
+locking.
+\item We create a readlock for \code{getppid} in order to avoid the issue where
+the parent could exit by the time the function returns.
+\item \code{rcu\_read\_lock} is very similar to a reader/writer lock, but this
+goes a step further.
+\item It is known as read copy update lock. You can have multiple readers and
+one writer acting at the same time.
+\item When a writer wants to update a data structure, it makes a copy of the
+structure.
+\item The structure is accessed through only one pointer.
+\item Once the write is complete, the writer switches the pointer to the old
+copy to the new copy atomically.
+\item It is possible in rcu for the reader to read an older version of a piece
+of data.
+\item However, the reader will never read an incomplete version of the data.
+\item There is a mechanism to make sure that writer does not change values until
+all the readers complete their read of the old data page.
+\item There is a significant overhead by creating a reader lock every time a
+reader must access a variable.
+\item You may have to go to the top of the file to see what's going on.
+\item On a certain level, you need to make an abstraction and abstract some of
+the lower level detail.
+\item You need to learn how to cut some things and abstract systems away.
+\item You must assume some certain operations.
+\item You must learn how to look at things and assume that's how they work.
+\item Locking should be avoided as much as possible.
+\item If you do not need to lock the majority of cases, then you should avoid
+locking and find another way to correct it.
+\end{itemize}
+
+\section{Implementing Locks}
+\begin{itemize}
+\item What does it mean to yield?
+\item What does it mane to sleep?
+\item The big question is ``What does it mean for a process to sleep?''
+\item The virtual memory space is made up of 4G.
+\item With the typical structure of text, followed by static, followed by the
+heap.
+\item Where the heap begins is called the \emph{brake} or \code{brk}.
+\item The stack starts around 3G and maps down, with empty space between the
+heap and the stack.
+\item The last 1G is the kernel code. \code{bzImage} file is the kernel code.
+\item The static section of the memory along with the text memory is mapped to
+physical regions within the RAM of the system.
+\item The OS silently converts these areas of code from virtual address space to
+physical address space.
+\item These virtual addresses must be transformed in order for the machine to be
+able to function correctly.
+\item The kernel image and data sections are common to all processes.
+\item Thus, they are images of a single piece of the memory.
+\item Each process only has one copy of the kernel running.
+\item The kernel memory contains the \code{bzImage} and a stack.
+\item It must have a stack for each process, which is typically 8K for each
+process.
+\item The starting and ending address for each process falls on the 8K boundary.
+\item You would take away the last 13 bits to locate the \code{thread\_info}
+struct for the current task.
+\item The \code{thread\_info} has a pointer to the \code{task\_struct}.
+\item Where are the task structs?
+\item Within the kernel space, there must be task structs for everyone.
+\item All the task structs are linked together through an embedded linked list
+in the \code{list\_head} struct. This is a doubly linked list.
+\item The very first process is \code{init\_task} with a \code{pid} of 0, known
+as the swapper thread.
+\item Within the \code{struct task\_list} there is a \code{int} variable known
+as \code{state}.
+\item \code{state} can have a number of values.
+\begin{enumerate}
+\item \code{TASK\_RUNNING}
+\item \code{TASK\_INTERUPTABLE}
+\item \code{TASK\_UNINTERUPTABLE}
+\item \code{TASK\_TRACED}
+\item \code{TASK\_ZOMBIE}
+\end{enumerate}
+\item Linux uses \code{TASK\_RUNNING} for running processes and processes that
+can be run.
+\item \code{TASK\_INTERUPTABLE} and \code{TASK\_UNINTERUPTABLE} are used for
+sleeping processes.
+\item The scheduler moves through the linked list and gets the next runnable
+task on the run queue.
+\item The run queue now is a $n$-something list with a method to set priorities.
+\end{itemize}
+
+\end{document}
