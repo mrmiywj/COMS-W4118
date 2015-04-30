@@ -1,0 +1,72 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newcommand{\code}{\texttt}
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 22}
+\author{Alexander Roth}
+\date{2015 -- 04 -- 16}
+\maketitle
+
+\section{Berkeley Fast File System (FFS) Layout}
+\begin{itemize}
+\item Partition means you have a physical drive and you separate each section of
+the drive into a filesystem.
+\item Partitions are also known as \emph{Volumes}
+\item iNode is a single block per file; each file has an inode. INode keeps
+track of the location of data within the file as well as the metadata for the
+file.
+\item i-node is a fixed array of numbers. Each file is uniquely identified by
+the i-node number in the file system.
+\item Block bitmap is used to find out which block of memory is not in use.
+\item A cylinder is the same track on a disk. A cylinder group is a larger
+number of tracks linked together.
+\item The basic structure is a list of i-nodes that point to data blocks.
+\item You can have multiple filenames pointing to the same file in the UNIX
+system.
+\end{itemize}
+
+\section{Hard Links Versus Symlinks}
+\begin{itemize}
+\item Every hard link is equal. It is a link that refers to some i-node number.
+\item You can get stuck in a cycle if two hardlinks are connected to each other.
+\item You cannot make a hard link to a directory in the unix system.
+\item Symbolic link is a file itself.
+\item A hard link is an actual entry in the directory, a symbolic link is just a
+shortcut.
+\item Symbolic links are just names that point to any file.
+\item Hardlinks must point to an i-node in the file system.
+\item You cannot have two hardlinks from different file systems because that
+uses two separate i-node directories.
+\end{itemize}
+
+\section{Schematic View of Virtual File System}
+\begin{itemize}
+\item Regular hard disks can be mounted and unmounted just like mobile drives.
+\item The operating system must be able to mount and unmount any file system.
+\item VFS was created because the operating system simply writes code using the
+interface defined by the VFS. Different types of file systems will implement the
+VFS interface.
+\end{itemize}
+
+\section{LFS Idea}
+\begin{itemize}
+\item Let's just treat the file system as a large tape.
+\item Everything is sequential, there is no random access.
+\item Log structured file system.
+\item Since we are doing a lot more reading than writing to a file system, we
+should store all files being read sequentially.
+\end{itemize}
+
+\end{document}

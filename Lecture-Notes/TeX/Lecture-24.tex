@@ -1,0 +1,94 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 24}
+\author{Alexander Roth}
+\date{2015 -- 04 -- 23}
+\maketitle
+
+\section{Scheduling II}
+\subsection{Motivation}
+\begin{itemize}
+\item There is no one-size-fits-all scheduling algorithm.
+\item The Completely Fair Scheduler is a complicated beast.
+\item Many real scheduling algorithms combine many elements of the simple algorithms that we see.
+\end{itemize}
+
+\subsection{Combining Scheduling Algorithms}
+\begin{itemize}
+\item The conceptual image is there are a list of running processes.
+\item The kernel picks one process to run next.
+\item The real picture is more complicated.
+\item There are multi-level queues.
+\item We have multiple queues because most systems have multiple CPUs.
+\item Each queue can have it's own scheduling algorithm.
+\item Foreground processes should have higher priority than the background processes.
+\end{itemize}
+
+\subsection{Global Queue of Processes}
+\begin{itemize}
+\item There is one ready queue shared across all CPUs
+\end{itemize}
+
+\subsection{Per-CPU Queue Of Processes}
+\begin{itemize}
+\item We statically partition processes to the CPU.
+\item Easy to implement, but there is the issue of a load imbalance.
+\end{itemize}
+
+\subsection{Hybrid Approach}
+\begin{itemize}
+\item Use a hybrid approach. Have a global queue and a per-CPU queue.
+\item Ability to move processes around.
+\end{itemize}
+
+\subsection{SMP: ``Gang'' Scheduling}
+\begin{itemize}
+\item If you have multiple squads that work together, producer-consumer model.
+\item These systems will work best if everything is working at the same time.
+\item The operating system will try to schedule the system together as much as possible.
+\end{itemize}
+
+\subsection{Real-Time Scheduling}
+\begin{itemize}
+\item Linux supports Real-Time Scheduling
+\item There are two kinds of real-time scheduling.
+\begin{enumerate}
+\item Hard Real-Time, and
+\item Soft Real-Time
+\end{enumerate}
+\item Soft Real-Time: If you have a task that is designated as real-time, it will run and preempt any normal processes.
+\item Hard Real-Time is difficult to implement because of all the processes that are running.
+\end{itemize}
+
+\subsection{Linux Scheduling Overiew}
+\begin{itemize}
+\item There are multiple levels of queues with priority
+\item There are hundreds of levels of priority.
+\item These are hard priority levels, so a higher priority preempts the lower level.
+\item 0 is the normal priority.
+\item There are sublevels of priorities in a hard level.
+\item Linux has 100 static priority levels.
+\item Nice values are the priority values within a level.
+\end{itemize}
+
+\subsection{Completely Fair Scheduler (CFS)}
+\begin{itemize}
+\item Calculates schedule latency: the amount of time it takes for exch process to run at least once.
+\item Everyone has to run the schedule latency.
+\item CFS is not completely fair if there are more processes than you can fit in the latency period in a reasonable fashion.
+\end{itemize}
+
+\end{document}

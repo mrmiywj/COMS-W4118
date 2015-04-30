@@ -1,0 +1,143 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 25}
+\author{Alexander Roth}
+\date{2015 -- 04 -- 30}
+\maketitle
+
+\section{Memory Management 2 Electric Boogaloo: Virtual Memory}
+\begin{itemize}
+\item If multiple processes use a lot of memory and use more memory than you
+have, what do you do?
+\item What if you run out of all physical memory because you were running too
+many processes?
+\item To be able to load more processes and have them use more memory physically
+available.
+\item Memory access tends to be temporal and spatial.
+\item Chances are we need to access memory that is adjacent to each other.
+\item A program tends to access a memory address locally for some time and then
+jump to different locations.
+\item A virtual memory system tries to have a disk as the backing storage for
+memory to give the illusion that accessing memory is handled quickly.
+\item Page fault refers to the condition where there is a legitimate access to a
+page, but the page has been swapped out to a disk before it was accessed.
+\item If a page fault occurs, there is a page fault hanlder that halts the
+running process, loads the page to memory, and then restart the process that
+caused the page fault.
+\item From the process point of view, it never knew what happened. It was just
+interrupted.
+\item When we look for the page, we have to translate the virtual mapping to the
+physical mapping.
+\item The operating system must know when to bring pages from disk to memory.
+\item If you are bringing back something from disk drive, then the chances are
+you don't have a free frame.
+\item Thus, one of the frames in the table needs to be removed and saved to
+disk.
+\item This is known as page replacement.
+\end{itemize}
+
+\subsection{Page Selection}
+\begin{itemize}
+\item Load pages when they must absolutely be in memory.
+\item Also used when not necessarily need to save memory.
+\item The idea is to be as lazy as possible.
+\item The user can specify which pages are needed.
+\item This is known as request paging.
+\item The operating system tends to discount whatever the user asks for.
+\item Pre-paging tries to smooth out bursts of page faults within the page
+select.
+\item A working set refers to all the pages that the processes touches within a
+given time.
+\item The point of pre-paging, adaptive paging, is to smooth out some of the
+page fault rate.
+\item If we read pages in at a predictive fashion, we won't have the issue of
+and delay of page faults.
+\item Thrashing refers to the case where you have a limited amount of RAM but
+you are running a large amount of processes.
+\item You don't have enough memory for all the processes so the operating system
+has to keep saving to disk to make room for the processes.
+\end{itemize}
+
+\subsection{Page Replacement Algorithms}
+\begin{itemize}
+\item Throw out the pages that won't be used for the longest time in the future.
+\item The problem is we don't know how long a page will not be used for.
+\item So we just have to make an approximation.
+\item Every process algorithm has FIFO, so we could use it for the replacement
+algorithm.
+\item The theory is that the past will produce the future.
+\item When we make a decision to choice a frame to save to disk, LRU will look
+at the page that was last used the longest.
+\item Chances are the algorithm will not be used in the future as well.
+\item However, we need to keep track of when everything was last used, which is
+expensive.
+\item The biggest problem about FIFO is that it looks at which page got loaded
+first, which is not a fair statement.
+\item What if the item being kicked out is a global variable that is being
+accessed all the time?
+\item FIFO ignores access patterns.
+\item LRU stands for Least-Recently-Used.
+\item In a normal program where memory access is localized, LRU is pretty
+standard.
+\end{itemize}
+
+\subsection{Least Recently Used Algorithm}
+\subsubsection{Implementation 1}
+\begin{itemize}
+\item Hard to implement
+\item Need to maintain what was the last item accessed.
+\item Every time page is referenced, save system clock into the counter of the
+page.
+\item Page replacement: scan through pages to find the one with the oldest
+clock.
+\item Linear scan through all the frames.
+\item Every time there is a memory access, the clock field in the entry has to
+be updated.
+\end{itemize}
+
+\subsubsection{Implementation 2}
+\begin{itemize}
+\item Every time a frame is referenced, move it to the front of the list that is
+containing the pages.
+\item The front of the list has the pages that were not accessed in quiet some
+time.
+\item Manipulating a link list everytime there is a memory access can be pretty
+heavy.
+\end{itemize}
+
+\subsection{Linux LRU}
+\begin{itemize}
+\item Linux approximates LRU by not finding the least recently accessed page,
+but by finding a not recently accessed page.
+\item The page being selected may not be the least recently accessed page, but
+it's close.
+\item This is known as the clock algorthim or the second-chance algorithm.
+\item There is a reference bit within the page entry.
+\item Everytime the page is accessed, the bit is turned on.
+\item Whenever you read or write something from this page, the reference bit is
+turned on.
+\item The hardware sets the bit from 0 to 1.
+\item The OS tries to find a page with the reference bit cleared.
+\item The OS traverse all pages, clearing bits over time.
+\item The hardware will keep turning on the reference bit whenever it is
+accessed.
+\item This system will act like a FIFO but only kick out a page if its reference
+bit is not set.
+\item The operating system goes through the circularly linked array of pages
+looking for whichever have their referenced bits set. It then turns the bit off.
+\end{itemize}
+
+\end{document}

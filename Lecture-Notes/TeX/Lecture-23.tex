@@ -1,0 +1,102 @@
+\documentclass[]{article}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{tikz-qtree}
+\usepackage{tipa}
+\begin{document}
+
+\newtheorem{thm}{Theorem}
+\title{Operating Systems \\ COMS W4118 \\ Lecture 23}
+\author{Alexander Roth}
+\date{2015 -- 04 -- 21}
+\maketitle
+
+\section{Scheduling}
+\subsection{Dispatcher versus Scheduler}
+\begin{itemize}
+\item Dispatcher is a low-level mechanism.
+\item It's responsibility is for context-switching.
+\item Scheduler picks which process to run.
+\item Scheduler has a scheduling policy, that is a low-level algorithm that
+decides which process to run at a given point in time.
+\item The scheduler makes a decision when a process switches from running to
+waiting state, when it switches from running to ready, or when it switches from
+waiting to ready, or it terminates.
+\end{itemize}
+
+\subsection{Scheduling Algorithm}
+\begin{itemize}
+\item There are computation heavy processes, that is, they are CPU bound
+\item There are a lot of processes that are I/O heavy; that is, they are I/O
+bound.
+\item I/O bound processes should have a higher priority when they have something
+to do, because they involve user interaction.
+\item However, they are only used temporarily.
+\item It is better to do calculations in a batch so we can avoid the overhead of
+context-switching. That is why we use batch systems when there is a long wait
+time in I/O bound processes.
+\item There are possible specializations in systems, such as real-time systems.
+For example, we have embedded systems, such as medical devices.
+\end{itemize}
+
+\subsection{Scheduling Performance Metrics}
+\begin{itemize}
+\item The shorter the waiting time the better the system will handle.
+\item A good scheduling algorithm should be wasting CPU cycles as little as
+possible.
+\item Waiting time considers the whole entire time until the process completes.
+\end{itemize}
+
+\subsection{FCFS Algorithm}
+\begin{itemize}
+\item First-come first-serve
+\item The scheduling time depends on the arrival order.
+\item So a long process can occur before a short process
+\item It is more optimal to run the shorter jobs first.
+\end{itemize}
+
+\subsection{Shortest Job First}
+\begin{itemize}
+\item Schedule hte process with the shortest time.
+\item Advantages - minimizes average wait time.
+\item Disadvantage - difficult to predict burst time
+\end{itemize}
+
+\subsection{Round-Robin}
+\begin{itemize}
+\item Context-switch heavy process.
+\item Uses a time slice method to determine what's running
+\item If the time slice is too long, then it basically becomes first-come first-
+serve.
+\item If the time slice is too short, then it becomes weighted down by context-
+switches.
+\item Advantages are there is good interactivity, provided a reasonable time
+slice.
+\item Lower average waiting time when job lengths vary widely.
+\item Fair allocation of CPU across processes.
+\item Disadvantages are poor average waiting time when jobs have similar
+lengths.
+\item Performance depends on the length of the time slice.
+\end{itemize}
+
+\subsection{Priorities}
+\begin{itemize}
+\item Scheduling systems have the notion of priorities.
+\item A priority is associated with each process.
+\item If there is a high-priority process is running, it will not be interrupted
+by the low-priority functions.
+\item Round-robin between processes that are of equal priority.
+\item There is a binary tree structure that separates processes based on
+priorities.
+\item Highest priority processes will always run before the lower priorities.
+\item There is an issue with starvation of the lower priority processes.
+\end{itemize}
+
+\end{document}
